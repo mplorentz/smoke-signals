@@ -9,6 +9,9 @@ Setup a virtualenv:
     mkvirtualenv smoke-signals
     pip install -r requirements.txt
 
+Make your database:
+   sqlite3 db/smokesignals.db < db/schema.sqlite3
+
 And get 'er started:
 
     python smokesignals/app.py

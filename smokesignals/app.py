@@ -1,8 +1,21 @@
-from flask import Flask, request
+from flask import Flask, request, g
+import sqlite3
 import feedparser
 
 def create_app():
     app = Flask(__name__)
+
+    def connect_db():
+        return sqlite3.connect('db/smokesignals.db')
+
+    @app.before_request
+    def before_request():
+        g.db = connect_db()
+
+    @app.teardown_request
+    def teardown_request(exception):
+        if hasattr(g, 'db'):
+            g.db.close()
 
     # define all the routes here
 
@@ -10,6 +23,7 @@ def create_app():
     def main():
         """ Main landing page. """
         return "smoke signals connect tent and rss!"
+
 
     # need a tent registration/login route for tent v0.3
 
