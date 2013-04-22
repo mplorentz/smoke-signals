@@ -10,7 +10,8 @@ Setup a virtualenv:
     pip install -r requirements.txt
 
 Make your database:
-   sqlite3 db/smokesignals.db < db/schema.sqlite3
+
+    sqlite3 db/smokesignals.db < db/schema.sqlite3
 
 And get 'er started:
 
