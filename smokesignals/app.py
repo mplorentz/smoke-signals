@@ -1,16 +1,15 @@
 from flask import Flask, request, g
-import sqlite3
 import feedparser
+from database import Database
 
 def create_app():
     app = Flask(__name__)
-
-    def connect_db():
-        return sqlite3.connect('db/smokesignals.db')
-
+    app.debug = True
+    
     @app.before_request
     def before_request():
-        g.db = connect_db()
+        db = Database()
+        g.db = db.connect()
 
     @app.teardown_request
     def teardown_request(exception):
