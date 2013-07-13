@@ -1,5 +1,5 @@
 from flask import Flask, request, g, render_template, redirect, session
-import json, urllib2, re, random, string
+import json, urllib2, re, random, string, time, hmac, hashlib, base64
 import feedparser
 from database import Database
 
@@ -56,6 +56,7 @@ def create_app():
         entity = request.args.get('entity')
         if entity[-1] == "/":
             entity = entity[:-1]
+        session['entity'] = entity
 
         # Discover the given entity
         res = urllib2.urlopen(entity)
@@ -100,6 +101,9 @@ def create_app():
         token_url = re.match(r"<(.*)>;", res.headers.getheader('link')).group(1)
         app_cred_post = json.load(urllib2.urlopen(token_url))
         app_post_id = app_cred_post['post']['mentions'][0]['post']
+        session['client_id'] = app_post_id
+        session['hawk_key'] = app_cred_post['post']['content']['hawk_key']
+        session['hawk_id']  = app_cred_post['post']['id']
 
         #start OAuth
         oauth_url = info['post']['content']['servers'][0]['urls']['oauth_auth']
@@ -111,11 +115,35 @@ def create_app():
     def finish_auth():
         code = request.args.get('code')
         state = request.args.get('state')
-        if state == session['state']:
-            token_url = session['info']['posts']['content']['servers'][0]['urls']['oauth_token']
-            return "looks legit"
-        else:
+
+        # verify the state
+        if state != session['state']:
             return "states did not match up"
+
+        token_url = session['info']['post']['content']['servers'][0]['urls']['oauth_token']
+        now   = str(int(time.time()))
+        nonce = randomword(10)
+        uri   = token_url.replace(session['entity'], "")
+        host  = session['entity'][7:]
+        mac_data = "hawk.1.header\n%s\n%s\nPOST\n%s\n%s\n80\n\n\n%s\n\n" % (
+                now, nonce, uri, host, session['client_id']
+        )
+        print(mac_data)
+        mac = base64.b64encode(hmac.new(session['hawk_key'].encode('utf-8'), mac_data, hashlib.sha256).digest())
+
+        req = urllib2.Request(
+            token_url, 
+            data=json.dumps({"code": code, "token_type": "https://tent.io/oauth/hawk-token"}),
+            headers={
+                'Content-Type':'application/json',
+                'Authorization': 'Hawk id="%s", mac="%s", ts="%s", nonce="%s", app="%s"' %
+                    (session['hawk_id'], mac, now, nonce, session['client_id'])
+            }
+        )
+
+        res = json.load(urllib2.urlopen(req))
+
+        return res['access_token']
 
     return app
 
