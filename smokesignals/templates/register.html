@@ -2,6 +2,22 @@
     <h1>Registration</h1>
     <form action="/register" method="POST">
         Entity <input name="entity" type="text"/>
+        To Protocol 
+        <input name="to_protocol" type="select">
+            <option name="tent">Tent</option>
+            <option name="rss">RSS</option>
+        </input>
+        Post Type
+        <input name="post_type" type="select">
+            <option name="status">status</option>
+            <option name="essay">essay</option>
+            <option name="rss">RSS</option>
+        </input>
+        Visibilty
+        <input name="visibility" type="select">
+            <option name="public">Public</option>
+            <option name="private">Private</option>
+        </input>
         <input type="submit"/>
     </form>
 </html>

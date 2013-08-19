@@ -1,6 +1,7 @@
 from flask import Flask, request, g, render_template, redirect, session
-import json, urllib2, re, random, string, time, hmac, hashlib, base64
+import json, urllib2, re, random, string, time, hmac, hashlib, base64, urlparse
 import feedparser
+from user import User
 from database import Database
 
 Flask.secret_key = "ITSASECRETDONTTELLANYONE"
@@ -14,7 +15,7 @@ def create_app():
     
     @app.before_request
     def before_request():
-        db = Database()
+        g.db = Database()
 
     @app.teardown_request
     def teardown_request(exception):
@@ -48,15 +49,16 @@ def create_app():
 
     @app.route('/register', methods=['POST'])
     def end_register():
-        return redirect("/start_auth?entity=%s" % (request.form['entity']))
-
-    @app.route('/start_auth')
-    def start_auth():
         """ Go through the Tent auth process. """
-        entity = request.args.get('entity')
+        # TODO validate form input
+        entity = request.form['entity'].strip()
         if entity[-1] == "/":
             entity = entity[:-1]
         session['entity'] = entity
+        to_protocol = request.form['to_protocol']
+        post_type = request.form['post_type']
+        visibility = request.form['visibility']
+
 
         # Discover the given entity
         res = urllib2.urlopen(entity)
@@ -97,19 +99,43 @@ def create_app():
                 'Content-Length': len(data),
             }
         )
-        res = urllib2.urlopen(req)
-        token_url = re.match(r"<(.*)>;", res.headers.getheader('link')).group(1)
-        app_cred_post = json.load(urllib2.urlopen(token_url))
-        app_post_id = app_cred_post['post']['mentions'][0]['post']
-        session['client_id'] = app_post_id
-        session['hawk_key'] = app_cred_post['post']['content']['hawk_key']
-        session['hawk_id']  = app_cred_post['post']['id']
+        app_post_res = urllib2.urlopen(req)
+        app_post = json.loads(app_post_res.read())
+
+        # get the id from the app post
+        session['client_id'] = app_post['post']['id']
+
+        # get the hawk key and id from the credentials post
+        cred_url = re.match(r"<(.*)>;", app_post_res.headers.getheader('link')).group(1)
+        app_cred_post = json.load(urllib2.urlopen(cred_url))
+        session['access_token_key'] = app_cred_post['post']['content']['hawk_key']
+        session['acess_token_id']  = app_cred_post['post']['id']
+
+        # save our new user
+        user = User(g.db)
+        user.create(entity, session['acess_token_id'], session['acess_token_key'], to_protocol, post_type, visibility)
+        g.db.conn.commit()
 
         #start OAuth
-        oauth_url = info['post']['content']['servers'][0]['urls']['oauth_auth']
+        start_oauth()
+        
+    def start_oauth():
+        if 'entity' not in session:
+            return "error: entity not set"
+        if ('access_token_key' not in session) or ('access_token_id' not in session):
+            user = User(g.db)
+            user = user.where("entity=?", (session['entity'],), one=True)
+            session['access_token_key'] = user['user_mac_key']
+            session['access_token_id']  = user['user_mac_key_id']
+        if 'info' not in session:
+            res = urllib2.urlopen(entity)
+            link = re.match(r"<(.*)>;", res.headers.getheader('link')).group(1)
+            session['info'] = json.load(urllib2.urlopen(entity + link))      
+            
+        oauth_url = session['info']['post']['content']['servers'][0]['urls']['oauth_auth']
         state = randomword(10)
         session['state'] = state
-        return redirect("%s?client_id=%s&state=%s" % (oauth_url, app_post_id, state))
+        return redirect("%s?client_id=%s&state=%s" % (oauth_url, session['client_id'], state))
 
     @app.route('/finish_auth')
     def finish_auth():
@@ -121,32 +147,39 @@ def create_app():
             return "states did not match up"
 
         token_url = session['info']['post']['content']['servers'][0]['urls']['oauth_token']
-        now   = str(int(time.time()))
-        nonce = randomword(10)
-        uri   = token_url.replace(session['entity'], "")
-        host  = session['entity'][7:]
-        mac_data = "hawk.1.header\n%s\n%s\nPOST\n%s\n%s\n80\n\n\n%s\n\n" % (
-                now, nonce, uri, host, session['client_id']
-        )
-        print(mac_data)
-        mac = base64.b64encode(hmac.new(session['hawk_key'].encode('utf-8'), mac_data, hashlib.sha256).digest())
-
-        req = urllib2.Request(
-            token_url, 
-            data=json.dumps({"code": code, "token_type": "https://tent.io/oauth/hawk-token"}),
-            headers={
-                'Content-Type':'application/json',
-                'Authorization': 'Hawk id="%s", mac="%s", ts="%s", nonce="%s", app="%s"' %
-                    (session['hawk_id'], mac, now, nonce, session['client_id'])
-            }
-        )
+        req = digest(token_url, session['client_id'], session['access_token_key'], session['access_token_id'])
 
         res = json.load(urllib2.urlopen(req))
+        session['access_token'] = res['access_token']
+        session['hawk_key'] = res['hawk_key']
 
         return res['access_token']
 
     return app
+    
+    def digest(url, client_id, hawk_key, hawk_id):
+        urlparts = urlparse.urlparse(url)
+        host = urlparts.netloc
+        uri = urlparts.path
+        now   = str(int(time.time()))
+        nonce = randomword(10)
+        mac_data = "hawk.1.header\n%s\n%s\nPOST\n%s\n%s\n80\n\n\n%s\n\n" % (
+                now, nonce, uri, host, client_id
+        )
+        
+        mac = base64.b64encode(hmac.new(hawk_key.encode('utf-8'), mac_data, hashlib.sha256).digest())
 
+        req = urlib2.Request(
+            url, 
+            data=json.dumps({"code": code, "token_type": "https://tent.io/oauth/hawk-token"}),
+            headers={
+                'Content-Type':'application/json',
+                'Authorization': 'Hawk id="%s", mac="%s", ts="%s", nonce="%s", app="%s"' %
+                    (hawk_id, mac, now, nonce, client_id)
+            }
+        )
+        
+        return req
 
 if __name__ == '__main__':
     app = create_app()
