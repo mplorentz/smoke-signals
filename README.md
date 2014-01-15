@@ -1,3 +1,5 @@
+*Smoke signals is no longer being developed. If you'd like to take over development, please fork this project and get in touch.*
+
 Smoke-signals is a Tent<->RSS bridge designed to pull RSS feeds into the Tent ecosystem and publish Tent content in the RSS format.
 
 Find out more about [Tent](http://tent.io)
