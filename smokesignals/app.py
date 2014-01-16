@@ -109,15 +109,15 @@ def create_app():
         cred_url = re.match(r"<(.*)>;", app_post_res.headers.getheader('link')).group(1)
         app_cred_post = json.load(urllib2.urlopen(cred_url))
         session['access_token_key'] = app_cred_post['post']['content']['hawk_key']
-        session['acess_token_id']  = app_cred_post['post']['id']
+        session['access_token_id']  = app_cred_post['post']['id']
 
         # save our new user
         user = User(g.db)
-        user.create(entity, session['acess_token_id'], session['acess_token_key'], to_protocol, post_type, visibility)
+        user.create(entity, session['acess_token_id'], session['access_token_key'], to_protocol, post_type, visibility)
         g.db.conn.commit()
 
         #start OAuth
-        start_oauth()
+        return start_oauth()
         
     def start_oauth():
         if 'entity' not in session:
@@ -125,8 +125,8 @@ def create_app():
         if ('access_token_key' not in session) or ('access_token_id' not in session):
             user = User(g.db)
             user = user.where("entity=?", (session['entity'],), one=True)
-            session['access_token_key'] = user['user_mac_key']
-            session['access_token_id']  = user['user_mac_key_id']
+            session['access_token_key'] = user.user_mac_key
+            session['access_token_id']  = user.user_mac_key_id
         if 'info' not in session:
             res = urllib2.urlopen(entity)
             link = re.match(r"<(.*)>;", res.headers.getheader('link')).group(1)
@@ -135,6 +135,7 @@ def create_app():
         oauth_url = session['info']['post']['content']['servers'][0]['urls']['oauth_auth']
         state = randomword(10)
         session['state'] = state
+
         return redirect("%s?client_id=%s&state=%s" % (oauth_url, session['client_id'], state))
 
     @app.route('/finish_auth')
@@ -147,39 +148,51 @@ def create_app():
             return "states did not match up"
 
         token_url = session['info']['post']['content']['servers'][0]['urls']['oauth_token']
-        req = digest(token_url, session['client_id'], session['access_token_key'], session['access_token_id'])
+        payload = {"code": code, "token_type": "https://tent.io/oauth/hawk-token"}
+        req = form_request(token_url, payload, session['client_id'], session['access_token_key'], session['access_token_id'])
 
-        res = json.load(urllib2.urlopen(req))
+        try:
+            res = json.load(urllib2.urlopen(req))
+        except urllib2.HTTPError, err:
+            print(err.read())
+            return "an error occured during authorization"
+
         session['access_token'] = res['access_token']
         session['hawk_key'] = res['hawk_key']
 
         return res['access_token']
 
+
     return app
     
-    def digest(url, client_id, hawk_key, hawk_id):
-        urlparts = urlparse.urlparse(url)
-        host = urlparts.netloc
-        uri = urlparts.path
-        now   = str(int(time.time()))
-        nonce = randomword(10)
-        mac_data = "hawk.1.header\n%s\n%s\nPOST\n%s\n%s\n80\n\n\n%s\n\n" % (
-                now, nonce, uri, host, client_id
-        )
-        
-        mac = base64.b64encode(hmac.new(hawk_key.encode('utf-8'), mac_data, hashlib.sha256).digest())
+def form_request(url, body, client_id, hawk_key, hawk_id):
+    urlparts = urlparse.urlparse(url)
+    host = urlparts.netloc
+    uri = urlparts.path
+    port = 0
+    if (urlparts.scheme == "https"):
+        port = 443
+    elif (urlparts.scheme == "http"):
+        port = 80
+    now   = str(int(time.time()))
+    nonce = randomword(10)
+    mac_data = "hawk.1.header\n%s\n%s\nPOST\n%s\n%s\n%s\n\n\n%s\n\n" % (
+            now, nonce, uri, host, port, client_id
+    )
 
-        req = urlib2.Request(
-            url, 
-            data=json.dumps({"code": code, "token_type": "https://tent.io/oauth/hawk-token"}),
-            headers={
-                'Content-Type':'application/json',
-                'Authorization': 'Hawk id="%s", mac="%s", ts="%s", nonce="%s", app="%s"' %
-                    (hawk_id, mac, now, nonce, client_id)
-            }
-        )
-        
-        return req
+    mac = base64.b64encode(hmac.new(hawk_key.encode('utf-8'), mac_data, hashlib.sha256).digest())
+
+    req = urllib2.Request(
+        url, 
+        data=json.dumps(body),
+        headers={
+            'Content-Type':'application/json',
+            'Authorization': 'Hawk id="%s", mac="%s", ts="%s", nonce="%s", app="%s"' %
+                (hawk_id, mac, now, nonce, client_id)
+        }
+    )
+
+    return req
 
 if __name__ == '__main__':
     app = create_app()
