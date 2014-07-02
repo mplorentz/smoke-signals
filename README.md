@@ -8,7 +8,7 @@ Find out more about [Tent](http://tent.io)
 
 Setup a virtualenv:
 
-    mkvirtualenv smoke-signals
+    mkvirtualenv ssenv
     pip install -r requirements.txt
 
 Make your database:

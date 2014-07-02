@@ -1,8 +1,6 @@
 create table users (
+   entity varchar(256),
    app_id varchar(256),
-   app_mac_key varchar(256),
-   app_mac_key_id varchar(256),
-   user_mac_key varchar(256),
-   user_mac_key_id varchar(256),
-   entity varchar(256)
+   hawk_key varchar(256),
+   hawk_id varchar(256)
 );
