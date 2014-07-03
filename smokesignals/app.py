@@ -3,6 +3,7 @@ import json, urllib2, re, random, string, time, hmac, hashlib, base64, urlparse
 import feedparser
 from user import User
 from database import Database
+from feed import Feed
 import tentlib
 
 Flask.secret_key = "ITSASECRETDONTTELLANYONE"
@@ -47,7 +48,7 @@ def create_app():
 
     @app.route('/register', methods=['POST'])
     def end_register():
-        """ Go through the tentlib auth process. """
+        """ Go through the Tent auth process. """
         # TODO validate form input
         entity = request.form['entity'].strip()
         if entity[-1] == "/":

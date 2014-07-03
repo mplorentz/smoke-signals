@@ -3,6 +3,7 @@ from database import Database
 class User:
     def __init__(self):
         self.db              = Database()
+        self.id              = None
         self.app_id          = None 
         self.entity          = None 
         self.hawk_key        = None
@@ -14,7 +15,6 @@ class User:
         db = Database()
         stmt = "SELECT * FROM users WHERE %s" % (conditions)
         res = db.query_db(stmt, args, one=one)
-        #TODO fetch preferences from User's Tent 
         if not res:
             return []
         if one:
@@ -25,7 +25,7 @@ class User:
         else:
             users = []
             for row in res:
-                u = User(self.db)
+                u = User()
                 for col, val in row.items():
                     setattr(u, col, val)
                 users.append(u)
@@ -43,6 +43,7 @@ class User:
             )
 
         self = User()
+        setattr(self, "id", self.db.conn.lastrowid)
         setattr(self, "entity", entity)
         setattr(self, "app_id", app_id)
         setattr(self, "hawk_key", hawk_key)
@@ -51,6 +52,6 @@ class User:
 
     def save(self):
         self.db.insert(
-            "UPDATE users SET app_id = ?, hawk_key = ?, hawk_id = ?, feed_url = ? WHERE entity = ?",
-            (self.app_id, self.hawk_key, self.hawk_id, self.entity, self.feed_url)
+            "UPDATE users SET app_id = ?, hawk_key = ?, hawk_id = ?, feed_url = ?, entity = ? WHERE id = ?",
+            (self.app_id, self.hawk_key, self.hawk_id, self.feed_url, self.entity, self.id)
             )
