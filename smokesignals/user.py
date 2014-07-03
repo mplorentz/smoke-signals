@@ -7,10 +7,7 @@ class User:
         self.entity          = None 
         self.hawk_key        = None
         self.hawk_id         = None
-        self.to_protocol     = None
-        self.to_post_type    = None
-        self.from_post_type  = None
-        self.visibility      = None
+        self.feed_url        = None
 
     @staticmethod
     def where(conditions, args=(), one=False):
@@ -38,8 +35,7 @@ class User:
         db = Database()
         return User.where("entity=?", (entity,), one=True)
 
-    def create(self, entity, app_id, hawk_key, hawk_id, to_protocol, post_type, visibility):
-        #TODO save to_protocol, post_type, and visibility in User's Tent
+    def create(self, entity, app_id, hawk_key, hawk_id):
         self.db.insert(
             """INSERT INTO users (entity, app_id, hawk_key, hawk_id)
             VALUES (?, ?, ?, ?)""",
@@ -51,13 +47,10 @@ class User:
         setattr(self, "app_id", app_id)
         setattr(self, "hawk_key", hawk_key)
         setattr(self, "hawk_id", hawk_id)
-        setattr(self, "to_protocol", to_protocol)
-        setattr(self, "post_type", post_type)
-        setattr(self, "visibility", visibility)
         return self
 
     def save(self):
         self.db.insert(
-            "UPDATE users SET app_id = ?, hawk_key = ?, hawk_id = ? WHERE entity = ?",
-            (self.app_id, self.hawk_key, self.hawk_id, self.entity)
+            "UPDATE users SET app_id = ?, hawk_key = ?, hawk_id = ?, feed_url = ? WHERE entity = ?",
+            (self.app_id, self.hawk_key, self.hawk_id, self.entity, self.feed_url)
             )

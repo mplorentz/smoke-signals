@@ -53,18 +53,15 @@ def create_app():
         if entity[-1] == "/":
             entity = entity[:-1]
         session['entity'] = entity
-        to_protocol = request.form['to_protocol']
-        post_type = request.form['post_type']
-        visibility = request.form['visibility']
 
         session['info'] = tentlib.discover(entity)
-
         (app_id, hawk_key, hawk_id) = tentlib.create_ss_app_post(entity)
 
         # save our new user
         user = User()
-        user.create(entity, app_id, hawk_key, hawk_id, to_protocol, post_type, visibility)
-        g.db.conn.commit()
+        user.create(entity, app_id, hawk_key, hawk_id)
+        user.feed_url = request.form['feed_url'].strip()
+        user.save()
 
         #start OAuth
         return start_oauth()
@@ -97,13 +94,13 @@ def create_app():
 
         token_url = session['info']['post']['content']['servers'][0]['urls']['oauth_token']
         payload = {"code": code, "token_type": "https://tent.io/oauth/hawk-token"}
-        req = tentlib.form_request(token_url, payload, user.app_id, user.hawk_key, user.hawk_id)
+        req = tentlib.form_oauth_request(token_url, payload, user.app_id, user.hawk_key, user.hawk_id)
+        print(req.headers)
 
         try:
             res = json.load(urllib2.urlopen(req))
         except urllib2.HTTPError, err:
             print(err.read())
-            foobar;
             return "an error occured during authorization"
 
         user.hawk_key = res['hawk_key']

@@ -1,7 +1,7 @@
 import json, urllib2, re, random, string, time, hmac, hashlib, base64, urlparse
 from user import User
 
-def post(user, data, url):
+def new_status_post(user, text):
     datastr = json.dumps(data)
     req = urllib2.Request(
         url,
@@ -36,12 +36,17 @@ def form_request(url, body, client_id, hawk_key, hawk_id):
         url, 
         data=json.dumps(body),
         headers={
-            'Content-Type':'application/json',
+            'Content-Type': 'application/vnd.tent.post.v0+json; type="https://tent.io/types/status/v0#"',
             'Authorization': 'Hawk id="%s", mac="%s", ts="%s", nonce="%s", app="%s"' %
                 (hawk_id, mac, now, nonce, client_id)
         }
     )
 
+    return req
+
+def form_oauth_request(url, body, client_id, hawk_key, hawk_id):
+    req = form_request(url, body, client_id, hawk_key, hawk_id)
+    req.headers['Content-type'] = 'application/json'
     return req
 
 def create_ss_app_post(entity):
