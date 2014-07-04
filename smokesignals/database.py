@@ -2,6 +2,7 @@ import sqlite3
 class Database:
     def __init__(self):
         self.conn = sqlite3.connect('db/smokesignals.db')
+        self.cursor = self.conn.cursor()
 
     def query_db(self, query, args=(), one=False):
         cur = self.conn.execute(query, args)
@@ -10,7 +11,7 @@ class Database:
         return (rv[0] if rv else None) if one else rv
 
     def insert(self, stmt, args=()):
-        self.conn.execute(stmt, args)
+        self.cursor.execute(stmt, args)
         self.conn.commit()
 
     def __del__(self):

@@ -8,7 +8,6 @@ class User:
         self.entity          = None 
         self.hawk_key        = None
         self.hawk_id         = None
-        self.feed_url        = None
 
     @staticmethod
     def where(conditions, args=(), one=False):
@@ -35,15 +34,16 @@ class User:
         db = Database()
         return User.where("entity=?", (entity,), one=True)
 
-    def create(self, entity, app_id, hawk_key, hawk_id):
+    @staticmethod
+    def create(entity, app_id, hawk_key, hawk_id):
+        self = User()
         self.db.insert(
             """INSERT INTO users (entity, app_id, hawk_key, hawk_id)
             VALUES (?, ?, ?, ?)""",
             (entity, app_id, hawk_key, hawk_id)
             )
 
-        self = User()
-        setattr(self, "id", self.db.conn.lastrowid)
+        setattr(self, "id", self.db.cursor.lastrowid)
         setattr(self, "entity", entity)
         setattr(self, "app_id", app_id)
         setattr(self, "hawk_key", hawk_key)
@@ -52,6 +52,6 @@ class User:
 
     def save(self):
         self.db.insert(
-            "UPDATE users SET app_id = ?, hawk_key = ?, hawk_id = ?, feed_url = ?, entity = ? WHERE id = ?",
-            (self.app_id, self.hawk_key, self.hawk_id, self.feed_url, self.entity, self.id)
+            "UPDATE users SET app_id = ?, hawk_key = ?, hawk_id = ?, entity = ? WHERE id = ?",
+            (self.app_id, self.hawk_key, self.hawk_id, self.entity, self.id)
             )

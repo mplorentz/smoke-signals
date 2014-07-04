@@ -1,26 +1,45 @@
-import json, urllib2
+import json, urllib2, feedparser
+from smokesignals.user import User
+from smokesignals.feed import Feed
+from smokesignals.feed_item import FeedItem
+import smokesignals.tentlib as tentlib
 
 def rss2tent():
     """Fetches new RSS posts and adds them to users' Tent servers"""
     
-    # fetch all users who want rss2tent
-    users = Users.where('to_protocol = ?', ['tent'])
+    # fetch all feeds
+    feeds = Feed.where("1")
     
-    for user in users:
-        # fetch the user's rss feed
-        feed = Feed.find_by_user(user)        
-        feed_json = json.load(urllib.urlopen('localhost:5000/feed?url=%s' % (feed['url'])))
+    for feed in feeds:
+        # fetch the rss feed and user
+        rss = feedparser.parse(feed.url)
+        user = User.where("id=?", (feed.id,), one=True)
         
         # add new rss posts to the user's Tent server
-        recent = feed['recent_entries']
-        for entry in feed_json['entries']:
+        recent = feed.recent_items_cache
+        for entry in rss['entries']:
             hashed_entry = Feed.hash_entry(entry)
             if hashed_entry not in recent:    
-                item = FeedItem.create(entry, user)
-                item.save()
-                feed.add_item(item)
+                print("Found new item %s" % (entry['link']))
+                info = tentlib.discover(user.entity)
+                new_post_url = info['post']['content']['servers'][0]['urls']['new_post']
+                data = {
+                    "type": "https://tent.io/types/status/v0#",
+                    "content": {
+                        "text": entry['link']
+                    }
+                }
+                req = tentlib.form_request(new_post_url, data, user.app_id, user.hawk_key, user.hawk_id)
+                try:
+                    res = json.load(urllib2.urlopen(req))
+                except urllib2.HTTPError, err:
+                    print(err.read())
+                    print(err.message)
                 
-        feed.save()      
+                recent.add(hashed_entry)
+
+        feed.recent_items_cache = recent
+        feed.save()
 
 def main():
     rss2tent()

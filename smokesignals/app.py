@@ -28,9 +28,6 @@ def create_app():
         """ Main landing page. """
         return "smoke signals connect tent and rss!"
 
-
-    # need a tent registration/login route for tent v0.3
-
     @app.route('/feed')
     def feed():
         """ View a feed, so we know parsing is working. """
@@ -58,11 +55,9 @@ def create_app():
         session['info'] = tentlib.discover(entity)
         (app_id, hawk_key, hawk_id) = tentlib.create_ss_app_post(entity)
 
-        # save our new user
-        user = User()
-        user.create(entity, app_id, hawk_key, hawk_id)
-        user.feed_url = request.form['feed_url'].strip()
-        user.save()
+        # save our new user and rss feed
+        user = User().create(entity, app_id, hawk_key, hawk_id)
+        feed = Feed().create(request.form['feed_url'].strip(), user.id)
 
         #start OAuth
         return start_oauth()

@@ -1,4 +1,5 @@
 from database import Database
+import pickle, sqlite3
 
 class Feed:
     def __init__(self):
@@ -19,33 +20,46 @@ class Feed:
         if one:
             f = Feed()
             for col, val in res.items():
-                setattr(f, col, val)
+                if col == "recent_items_cache":
+                    setattr(f, col, pickle.loads(str(val)))
+                else:
+                    setattr(f, col, val)
             return f
         else:
             feeds = []
             for row in res:
                 f = Feed()
                 for col, val in row.items():
-                    setattr(f, col, val)
+                    if col == "recent_items_cache":
+                        setattr(f, col, pickle.loads(str(val)))
+                    else:
+                        setattr(f, col, val)
                 feeds.append(f)
             return feeds
 
-    def create(url, last_fetch_date, user_id):
+    @staticmethod
+    def create(url, user_id):
+        self = Feed()
         self.db.insert(
-            """INSERT INTO feeds (url, last_fetch_date, user_id)
-            VALUES (?, ?, ?)""",
-            (url, last_fetch_date, user_id)
+            """INSERT INTO feeds (url, last_fetch_date, user_id, recent_items_cache)
+            VALUES (?, ?, ?, ?)""",
+            (url, 0, user_id, sqlite3.Binary(pickle.dumps(set(), 2)))
             )
 
-        self = Feed()
-        setattr(self, "id", self.db.conn.lastrowid)
+        setattr(self, "id", self.db.cursor.lastrowid)
         setattr(self, "url", url)
-        setattr(self, "last_fetch_date", last_fetch_date)
+        setattr(self, "last_fetch_date", 0)
         setattr(self, "user_id", user_id)
+        setattr(self, "recent_items_cache", set())
         return self
 
     def save(self):
         self.db.insert(
-            "UPDATE feeds SET url = ?, last_fetch_date = ?, user_id = ? WHERE id = ?",
-            (self.url, self.last_fetch_date, self.user_id, self.id)
+            "UPDATE feeds SET url = ?, last_fetch_date = ?, user_id = ?, recent_items_cache = ? WHERE id = ?",
+            (self.url, self.last_fetch_date, self.user_id, sqlite3.Binary(pickle.dumps(self.recent_items_cache, 2)), self.id)
             )
+
+    @staticmethod
+    def hash_entry(entry):
+        """Takes an entry from a feedparser RSS feed and produces a hashable value"""
+        return (entry['link'], entry['title'], entry['published'])

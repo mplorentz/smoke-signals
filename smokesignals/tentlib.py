@@ -66,9 +66,11 @@ def create_ss_app_post(entity):
                 "read": [
                     "https://tent.io/types/app/v0",
                     "https://tent.io/types/status/v0",
+                    "http://mattlorentz.com/tent/types/rssfeed/v0",
                 ],
                 "write": [
-                    "https://tent.io/types/status/v0"
+                    "https://tent.io/types/status/v0",
+                    "http://mattlorentz.com/tent/types/rssfeed/v0",
                 ]
             },
             "redirect_uri": "http://localhost:5000/finish_auth"
