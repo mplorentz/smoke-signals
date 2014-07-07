@@ -73,6 +73,7 @@ def create_ss_app_post(entity):
                     "http://mattlorentz.com/tent/types/rssfeed/v0",
                 ]
             },
+            "scopes": ["permissions"],
             "redirect_uri": "http://localhost:5000/finish_auth"
         },
         "permissions": {

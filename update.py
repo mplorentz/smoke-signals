@@ -25,9 +25,12 @@ def rss2tent():
                 new_post_url = info['post']['content']['servers'][0]['urls']['new_post']
                 data = {
                     "type": "https://tent.io/types/status/v0#",
+                    "permissions": {
+                        "public": True,
+                    },
                     "content": {
-                        "text": entry['link']
-                    }
+                        "text": "[%s](%s)" % (entry['title'], entry['link'])
+                    },
                 }
                 req = tentlib.form_request(new_post_url, data, user.app_id, user.hawk_key, user.hawk_id)
                 try:
