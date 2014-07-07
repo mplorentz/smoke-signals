@@ -11,9 +11,14 @@ def rss2tent():
     feeds = Feed.where("1")
     
     for feed in feeds:
-        # fetch the rss feed and user
-        rss = feedparser.parse(feed.url)
+        # fetch the user and feed
         user = User.where("id=?", (feed.id,), one=True)
+        try:
+            rss = feedparser.parse(feed.url)
+        except:
+            print("Error parsing RSS feed %s" % (feed.url))
+            pass
+
         
         # add new rss posts to the user's Tent server
         recent = feed.recent_items_cache

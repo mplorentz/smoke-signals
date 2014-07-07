@@ -46,18 +46,20 @@ def create_app():
     @app.route('/register', methods=['POST'])
     def end_register():
         """ Go through the Tent auth process. """
-        # TODO validate form input
-        entity = request.form['entity'].strip()
-        if entity[-1] == "/":
-            entity = entity[:-1]
+        entity = request.form['entity'][0:1024].strip()
+        feed_url = request.form['feed_url'][0:1024].strip()
         session['entity'] = entity
 
-        session['info'] = tentlib.discover(entity)
+        try:
+            session['info'] = tentlib.discover(entity)
+        except:
+            return "An error occured while discovering your entity."
+
         (app_id, hawk_key, hawk_id) = tentlib.create_ss_app_post(entity)
 
         # save our new user and rss feed
         user = User().create(entity, app_id, hawk_key, hawk_id)
-        feed = Feed().create(request.form['feed_url'].strip(), user.id)
+        feed = Feed().create(feed_url, user.id)
 
         #start OAuth
         return start_oauth()
@@ -84,7 +86,7 @@ def create_app():
 
         # verify the state
         if state != session['state']:
-            return "states did not match up"
+            return "Error: Authorization failed. Please try again."
 
         user = User.where("entity=?", (session['entity'],), one=True)
 
@@ -97,13 +99,13 @@ def create_app():
             res = json.load(urllib2.urlopen(req))
         except urllib2.HTTPError, err:
             print(err.read())
-            return "an error occured during authorization"
+            return "Error: Authorization failed. Please try again."
 
         user.hawk_key = res['hawk_key']
         user.hawk_id = res['access_token']
         user.save()
 
-        return "Success!"
+        return "Success! Smoke signals will start posting new RSS items to your account."
 
 
     return app
