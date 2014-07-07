@@ -1,10 +1,9 @@
+import json, urllib2, re, random, string, time, hmac, hashlib, base64, urlparse, feedparser
 from flask import Flask, request, g, render_template, redirect, session
-import json, urllib2, re, random, string, time, hmac, hashlib, base64, urlparse
-import feedparser
-from user import User
-from database import Database
-from feed import Feed
-import tentlib
+from models.user import User
+from models.feed import Feed
+from lib.database import Database
+import lib.tentlib as tentlib
 
 Flask.secret_key = "ITSASECRETDONTTELLANYONE"
 

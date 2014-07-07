@@ -1,4 +1,4 @@
-from database import Database
+from lib.database import Database
 
 class User:
     def __init__(self):

@@ -1,4 +1,4 @@
-from database import Database
+from lib.database import Database
 
 class FeedItem:
     def __init__(self):
