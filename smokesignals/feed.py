@@ -1,7 +1,10 @@
 from database import Database
+from collections import deque
 import pickle, sqlite3
 
 class Feed:
+    recent_items_cache_size = 200
+
     def __init__(self):
         self.db = Database()
         self.id = None
@@ -43,14 +46,14 @@ class Feed:
         self.db.insert(
             """INSERT INTO feeds (url, last_fetch_date, user_id, recent_items_cache)
             VALUES (?, ?, ?, ?)""",
-            (url, 0, user_id, sqlite3.Binary(pickle.dumps(set(), 2)))
+            (url, 0, user_id, sqlite3.Binary(pickle.dumps(deque([], self.recent_items_cache_size), 2)))
             )
 
         setattr(self, "id", self.db.cursor.lastrowid)
         setattr(self, "url", url)
         setattr(self, "last_fetch_date", 0)
         setattr(self, "user_id", user_id)
-        setattr(self, "recent_items_cache", set())
+        setattr(self, "recent_items_cache", deque([], self.recent_items_cache_size))
         return self
 
     def save(self):
@@ -60,7 +63,7 @@ class Feed:
             )
 
     @staticmethod
-    def hash_entry(entry):
+    def hashable_entry(entry):
         """Takes an entry from a feedparser RSS feed and produces a hashable value"""
         return (entry['link'], entry['title'], entry['published'])
 

@@ -1,4 +1,5 @@
 import json, urllib2, feedparser
+from collections import deque
 from smokesignals.user import User
 from smokesignals.feed import Feed
 from smokesignals.feed_item import FeedItem
@@ -23,8 +24,9 @@ def rss2tent():
         # add new rss posts to the user's Tent server
         recent = feed.recent_items_cache
         for entry in rss['entries']:
-            hashed_entry = Feed.hash_entry(entry)
-            if hashed_entry not in recent:    
+            # Decide if this is a new post or not
+            hashable_entry = Feed.hashable_entry(entry)
+            if hashable_entry not in recent:    
                 print("Found new item %s" % (entry['link']))
                 info = tentlib.discover(user.entity)
                 new_post_url = info['post']['content']['servers'][0]['urls']['new_post']
@@ -44,7 +46,7 @@ def rss2tent():
                     print(err.read())
                     print(err.message)
                 
-                recent.add(hashed_entry)
+                recent.appendleft(hashable_entry)
 
         feed.recent_items_cache = recent
         feed.save()
