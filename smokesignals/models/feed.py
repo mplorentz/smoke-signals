@@ -1,4 +1,4 @@
-from database import Database
+from lib.database import Database
 from collections import deque
 import pickle, sqlite3
 
