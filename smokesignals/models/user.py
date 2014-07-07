@@ -34,18 +34,18 @@ class User:
 
     def find_by_entity(entity):
         db = Database()
-        return User.where("entity=?", (entity,), one=True)
+        return User.where("entity=%s", (entity,), one=True)
 
     @staticmethod
     def create(entity, app_id, app_hawk_key, app_hawk_id):
         self = User()
         self.db.insert(
             """INSERT INTO users (entity, app_id, app_hawk_key, app_hawk_id)
-            VALUES (?, ?, ?, ?)""",
+            VALUES (%s, %s, %s, %s) RETURNING id""",
             (entity, app_id, app_hawk_key, app_hawk_id)
             )
 
-        setattr(self, "id", self.db.cursor.lastrowid)
+        setattr(self, "id", self.db.cursor.fetchone()[0])
         setattr(self, "entity", entity)
         setattr(self, "app_id", app_id)
         setattr(self, "app_hawk_key", app_hawk_key)
@@ -56,9 +56,9 @@ class User:
 
     def save(self):
         self.db.insert(
-            "UPDATE users SET app_id = ?, app_hawk_key = ?, app_hawk_id = ?, hawk_key = ?, hawk_id = ?, entity = ? WHERE id = ?",
+            "UPDATE users SET app_id = %s, app_hawk_key = %s, app_hawk_id = %s, hawk_key = %s, hawk_id = %s, entity = %s WHERE id = %s",
             (self.app_id, self.app_hawk_key, self.app_hawk_id, self.hawk_key, self.hawk_id, self.entity, self.id)
             )
 
     def delete(self):
-        self.db.insert("DELETE FROM users WHERE id=?", (self.id,))
+        self.db.insert("DELETE FROM users WHERE id=%s", (self.id,))

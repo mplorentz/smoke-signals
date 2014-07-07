@@ -55,7 +55,7 @@ def create_app():
         except: return "An error occured while connecting to your entity (discovery failure)."
 
         # Check that entity is unique
-        if User.where("entity=?", (entity,)): 
+        if User.where("entity=%s", (entity,)): 
             return "Error: This entity is already registered."
 
         # Validate Feed
@@ -93,7 +93,7 @@ def create_app():
         if 'info' not in session:
             session['info'] = tentlib.discover(session['entity'])
 
-        user = User.where("entity=?", args=(session['entity'],), one=True)
+        user = User.where("entity=%s", args=(session['entity'],), one=True)
 
         oauth_url = session['info']['post']['content']['servers'][0]['urls']['oauth_auth']
         state = tentlib.randomword(10)
@@ -110,7 +110,7 @@ def create_app():
         if state != session['state']:
             return "Error: Authorization failed. Please try again.\nStates did not match up."
 
-        user = User.where("entity=?", (session['entity'],), one=True)
+        user = User.where("entity=%s", (session['entity'],), one=True)
 
         token_url = session['info']['post']['content']['servers'][0]['urls']['oauth_token']
         payload = {"code": code, "token_type": "https://tent.io/oauth/hawk-token"}
@@ -140,9 +140,9 @@ def create_app():
 
     @app.route('/finish_unregister')
     def finish_unregister():
-        user = User.where("entity=?", (session['entity'],), one=True)
+        user = User.where("entity=%s", (session['entity'],), one=True)
         user.delete()
-        feeds = Feed.where("user_id=?", (user.id,))
+        feeds = Feed.where("user_id=%s", (user.id,))
         for feed in feeds:
             feed.delete()
 

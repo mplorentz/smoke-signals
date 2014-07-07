@@ -1,5 +1,5 @@
 CREATE TABLE users (
-   id INTEGER PRIMARY KEY,
+   id SERIAL PRIMARY KEY,
    entity VARCHAR(256),
    app_id VARCHAR(256),
    app_hawk_key VARCHAR(256),
@@ -10,19 +10,19 @@ CREATE TABLE users (
 );
 
 CREATE TABLE feeds (
-    id INTEGER PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     url VARCHAR(1024),
     last_fetch_date INTEGER,
     user_id INTEGER,
-    recent_items_cache BLOB,
-    FOREIGN KEY(user_id) REFERENCES user(id)
+    recent_items_cache BYTEA,
+    FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 CREATE TABLE feed_items (
-    id INTEGER PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     title VARCHAR(512),
     url VARCHAR(1024),
     published_date INTEGER,
     feed_id INTEGER,
-    FOREIGN KEY(feed_id) REFERENCES feeds(id)
+    FOREIGN KEY (feed_id) REFERENCES feeds(id)
 );

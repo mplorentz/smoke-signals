@@ -33,12 +33,12 @@ class FeedItem:
     def create(url, last_fetch_date, user_id):
         self.db.insert(
             """INSERT INTO feeds (url, last_fetch_date, user_id)
-            VALUES (?, ?, ?)""",
+            VALUES (%s, %s, %s) RETURNING id""",
             (url, last_fetch_date, user_id)
             )
 
         self = Feed()
-        setattr(self, "id", self.db.conn.lastrowid)
+        setattr(self, "id", self.db.conn.fetchone()[0])
         setattr(self, "title", title)
         setattr(self, "url", url)
         setattr(self, "published_date", published_date)
@@ -47,9 +47,9 @@ class FeedItem:
 
     def save(self):
         self.db.insert(
-            "UPDATE feed_items SET title = ?, url = ?, published_date = ?, feed_id = ? WHERE id = ?"
+            "UPDATE feed_items SET title = %s, url = %s, published_date = %s, feed_id = %s WHERE id = %s"
             (self.title, self.url, self.published_date, self.feed_id, self.id)
             )
 
     def delete(self):
-        self.db.insert("DELETE FROM feed_items WHERE id=?", (self.id,))
+        self.db.insert("DELETE FROM feed_items WHERE id=%s", (self.id,))

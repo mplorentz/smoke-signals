@@ -45,11 +45,11 @@ class Feed:
         self = Feed()
         self.db.insert(
             """INSERT INTO feeds (url, last_fetch_date, user_id, recent_items_cache)
-            VALUES (?, ?, ?, ?)""",
+            VALUES (%s, %s, %s, %s) RETURNING id""",
             (url, 0, user_id, sqlite3.Binary(pickle.dumps(deque([], self.recent_items_cache_size), 2)))
             )
 
-        setattr(self, "id", self.db.cursor.lastrowid)
+        setattr(self, "id", self.db.cursor.fetchone()[0])
         setattr(self, "url", url)
         setattr(self, "last_fetch_date", 0)
         setattr(self, "user_id", user_id)
@@ -58,7 +58,7 @@ class Feed:
 
     def save(self):
         self.db.insert(
-            "UPDATE feeds SET url = ?, last_fetch_date = ?, user_id = ?, recent_items_cache = ? WHERE id = ?",
+            "UPDATE feeds SET url = %s, last_fetch_date = %s, user_id = %s, recent_items_cache = %s WHERE id = %s",
             (self.url, self.last_fetch_date, self.user_id, sqlite3.Binary(pickle.dumps(self.recent_items_cache, 2)), self.id)
             )
 
@@ -68,4 +68,4 @@ class Feed:
         return (entry['link'], entry['title'], entry['published'])
 
     def delete(self):
-        self.db.insert("DELETE FROM feeds WHERE id=?", (self.id,))
+        self.db.insert("DELETE FROM feeds WHERE id=%s", (self.id,))
