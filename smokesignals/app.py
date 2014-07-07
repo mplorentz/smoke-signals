@@ -50,18 +50,26 @@ def create_app():
         feed_url = request.form['feed_url'][0:1024].strip()
         session['entity'] = entity
 
-        try:
-            session['info'] = tentlib.discover(entity)
-        except:
-            return "An error occured while discovering your entity."
+        # Discover entity
+        try: session['info'] = tentlib.discover(entity)
+        except: return "An error occured while connecting to your entity (discovery failure)."
 
+        # Check that entity is unique
+        if User.where("entity=?", (entity,)): 
+            return "Error: This entity is already registered."
+
+        # Validate Feed
+        try: feedparser.parse(feed_url)
+        except: return "Error: Smoke Signals could not parse the RSS feed."
+
+        # Create App Post
         (app_id, app_hawk_key, app_hawk_id) = tentlib.create_ss_app_post(entity)
 
-        # save our new user and rss feed
+        # Save our new user and rss feed
         user = User().create(entity, app_id, app_hawk_key, app_hawk_id)
         feed = Feed().create(feed_url, user.id)
 
-        #start OAuth
+        # Start OAuth
         return start_oauth("/finish_registration")
 
     @app.route('/finish_registration')
