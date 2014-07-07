@@ -98,10 +98,10 @@ def create_ss_app_post(entity):
     # get the hawk key and id from the credentials post
     cred_url = re.match(r"<(.*)>;", app_post_res.headers.getheader('link')).group(1)
     app_cred_post = json.load(urllib2.urlopen(cred_url))
-    hawk_key = app_cred_post['post']['content']['hawk_key']
-    hawk_id  = app_cred_post['post']['id']
+    app_hawk_key = app_cred_post['post']['content']['hawk_key']
+    app_hawk_id  = app_cred_post['post']['id']
 
-    return (app_id, hawk_key, hawk_id)
+    return (app_id, app_hawk_key, app_hawk_id)
 
 def discover(entity):
     """Performs discovery on a given entity and returns the info post json."""

@@ -39,12 +39,12 @@ def create_app():
         return str(data)
 
     @app.route('/register', methods=['GET'])
-    def start_register():
+    def get_register():
         """ Register a new user. """
         return render_template("register.html")
 
     @app.route('/register', methods=['POST'])
-    def end_register():
+    def start_register():
         """ Go through the Tent auth process. """
         entity = request.form['entity'][0:1024].strip()
         feed_url = request.form['feed_url'][0:1024].strip()
@@ -55,16 +55,21 @@ def create_app():
         except:
             return "An error occured while discovering your entity."
 
-        (app_id, hawk_key, hawk_id) = tentlib.create_ss_app_post(entity)
+        (app_id, app_hawk_key, app_hawk_id) = tentlib.create_ss_app_post(entity)
 
         # save our new user and rss feed
-        user = User().create(entity, app_id, hawk_key, hawk_id)
+        user = User().create(entity, app_id, app_hawk_key, app_hawk_id)
         feed = Feed().create(feed_url, user.id)
 
         #start OAuth
-        return start_oauth()
+        return start_oauth("/finish_registration")
+
+    @app.route('/finish_registration')
+    def finish_registration():
+        return "Success! Smoke Signals will now post new RSS items to your Tent server."
         
-    def start_oauth():
+    def start_oauth(redirect_uri):
+        session['oauth_redirect'] = redirect_uri
         if 'entity' not in session:
             return "error: entity not set"
         if 'info' not in session:
@@ -72,7 +77,6 @@ def create_app():
 
         user = User.where("entity=?", args=(session['entity'],), one=True)
 
-            
         oauth_url = session['info']['post']['content']['servers'][0]['urls']['oauth_auth']
         state = tentlib.randomword(10)
         session['state'] = state
@@ -86,13 +90,13 @@ def create_app():
 
         # verify the state
         if state != session['state']:
-            return "Error: Authorization failed. Please try again."
+            return "Error: Authorization failed. Please try again.\nStates did not match up."
 
         user = User.where("entity=?", (session['entity'],), one=True)
 
         token_url = session['info']['post']['content']['servers'][0]['urls']['oauth_token']
         payload = {"code": code, "token_type": "https://tent.io/oauth/hawk-token"}
-        req = tentlib.form_oauth_request(token_url, payload, user.app_id, user.hawk_key, user.hawk_id)
+        req = tentlib.form_oauth_request(token_url, payload, user.app_id, user.app_hawk_key, user.app_hawk_id)
         print(req.headers)
 
         try:
@@ -105,8 +109,26 @@ def create_app():
         user.hawk_id = res['access_token']
         user.save()
 
-        return "Success! Smoke signals will start posting new RSS items to your account."
+        return redirect(session['oauth_redirect'])
 
+    @app.route('/unregister', methods=['GET'])
+    def get_unregister():
+        return render_template("unregister.html")
+
+    @app.route('/unregister', methods=['POST'])
+    def start_unregister():
+        session['entity'] = request.form['entity'][0:1024].strip()
+        return start_oauth("/finish_unregister")
+
+    @app.route('/finish_unregister')
+    def finish_unregister():
+        user = User.where("entity=?", (session['entity'],), one=True)
+        user.delete()
+        feeds = Feed.where("user_id=?", (user.id,))
+        for feed in feeds:
+            feed.delete()
+
+        return "Successfully deleted %s" % (user.entity)
 
     return app
     

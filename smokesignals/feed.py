@@ -63,3 +63,6 @@ class Feed:
     def hash_entry(entry):
         """Takes an entry from a feedparser RSS feed and produces a hashable value"""
         return (entry['link'], entry['title'], entry['published'])
+
+    def delete(self):
+        self.db.insert("DELETE FROM feeds WHERE id=?", (self.id,))

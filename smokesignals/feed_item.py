@@ -50,3 +50,6 @@ class FeedItem:
             "UPDATE feed_items SET title = ?, url = ?, published_date = ?, feed_id = ? WHERE id = ?"
             (self.title, self.url, self.published_date, self.feed_id, self.id)
             )
+
+    def delete(self):
+        self.db.insert("DELETE FROM feed_items WHERE id=?", (self.id,))

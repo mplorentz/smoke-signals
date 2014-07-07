@@ -4,8 +4,10 @@ class User:
     def __init__(self):
         self.db              = Database()
         self.id              = None
-        self.app_id          = None 
         self.entity          = None 
+        self.app_id          = None 
+        self.app_hawk_key    = None 
+        self.app_hawk_id     = None 
         self.hawk_key        = None
         self.hawk_id         = None
 
@@ -35,23 +37,28 @@ class User:
         return User.where("entity=?", (entity,), one=True)
 
     @staticmethod
-    def create(entity, app_id, hawk_key, hawk_id):
+    def create(entity, app_id, app_hawk_key, app_hawk_id):
         self = User()
         self.db.insert(
-            """INSERT INTO users (entity, app_id, hawk_key, hawk_id)
+            """INSERT INTO users (entity, app_id, app_hawk_key, app_hawk_id)
             VALUES (?, ?, ?, ?)""",
-            (entity, app_id, hawk_key, hawk_id)
+            (entity, app_id, app_hawk_key, app_hawk_id)
             )
 
         setattr(self, "id", self.db.cursor.lastrowid)
         setattr(self, "entity", entity)
         setattr(self, "app_id", app_id)
-        setattr(self, "hawk_key", hawk_key)
-        setattr(self, "hawk_id", hawk_id)
+        setattr(self, "app_hawk_key", app_hawk_key)
+        setattr(self, "app_hawk_id", app_hawk_id)
+        setattr(self, "hawk_key", None)
+        setattr(self, "hawk_id", None)
         return self
 
     def save(self):
         self.db.insert(
-            "UPDATE users SET app_id = ?, hawk_key = ?, hawk_id = ?, entity = ? WHERE id = ?",
-            (self.app_id, self.hawk_key, self.hawk_id, self.entity, self.id)
+            "UPDATE users SET app_id = ?, app_hawk_key = ?, app_hawk_id = ?, hawk_key = ?, hawk_id = ?, entity = ? WHERE id = ?",
+            (self.app_id, self.app_hawk_key, self.app_hawk_id, self.hawk_key, self.hawk_id, self.entity, self.id)
             )
+
+    def delete(self):
+        self.db.insert("DELETE FROM users WHERE id=?", (self.id,))
