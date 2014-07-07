@@ -1,9 +1,9 @@
 import json, urllib2, feedparser
 from collections import deque
-from smokesignals.user import User
-from smokesignals.feed import Feed
-from smokesignals.feed_item import FeedItem
-import smokesignals.tentlib as tentlib
+from models.user import User
+from models.feed import Feed
+from models.feed_item import FeedItem
+import lib.tentlib as tentlib
 
 def rss2tent():
     """Fetches new RSS posts and adds them to users' Tent servers"""

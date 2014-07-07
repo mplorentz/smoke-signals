@@ -1,4 +1,5 @@
 import json, urllib2, re, random, string, time, hmac, hashlib, base64, urlparse, feedparser
+from collections import deque
 from flask import Flask, request, g, render_template, redirect, session
 from models.user import User
 from models.feed import Feed
@@ -58,8 +59,10 @@ def create_app():
             return "Error: This entity is already registered."
 
         # Validate Feed
-        try: feedparser.parse(feed_url)
-        except: return "Error: Smoke Signals could not parse the RSS feed."
+        try: 
+            rss = feedparser.parse(feed_url)
+        except: 
+            return "Error: Smoke Signals could not parse the RSS feed."
 
         # Create App Post
         (app_id, app_hawk_key, app_hawk_id) = tentlib.create_ss_app_post(entity)
@@ -67,6 +70,14 @@ def create_app():
         # Save our new user and rss feed
         user = User().create(entity, app_id, app_hawk_key, app_hawk_id)
         feed = Feed().create(feed_url, user.id)
+
+        # Add all items in the feed to recent_items_cache, so they don't all get
+        # posted the first time the feed is processed.
+        initial_items = deque([], Feed.recent_items_cache_size)
+        for entry in rss['entries']:
+            initial_items.appendleft(Feed.hashable_entry(entry))
+        feed.recent_items_cache = initial_items
+        feed.save()
 
         # Start OAuth
         return start_oauth("/finish_registration")
