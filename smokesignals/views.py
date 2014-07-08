@@ -1,6 +1,7 @@
 import json, urllib2, re, random, string, time, hmac, hashlib, base64, urlparse, feedparser, os
 from collections import deque
 from flask import Flask, request, g, render_template, redirect, session
+from smokesignals import app
 from smokesignals.models.user import User
 from smokesignals.models.feed import Feed
 from smokesignals.lib.database import Database
