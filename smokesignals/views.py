@@ -10,9 +10,9 @@ import smokesignals.lib.tentlib as tentlib
 Flask.secret_key = "ITSASECRETDONTTELLANYONE"
 
 @app.route('/')
-def main():
+def home():
     """ Main landing page. """
-    return "smoke signals connect tent and rss!"
+    return render_template("home.html")
 
 @app.route('/feed')
 def feed():
