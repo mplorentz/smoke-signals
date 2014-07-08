@@ -127,9 +127,9 @@ def start_unregister():
 @app.route('/finish_unregister')
 def finish_unregister():
     user = User.where("entity=%s", (session['entity'],), one=True)
-    user.delete()
     feeds = Feed.where("user_id=%s", (user.id,))
     for feed in feeds:
         feed.delete()
+    user.delete()
 
     return "Successfully deleted %s" % (user.entity)
