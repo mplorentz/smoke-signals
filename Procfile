@@ -1,1 +1,1 @@
-web: gunicorn smokesignals.app:app & gunicorn smokesignals.smokesignalsd
+web: gunicorn smokesignals.app:app & python smokesignals/smokesignalsd.py
