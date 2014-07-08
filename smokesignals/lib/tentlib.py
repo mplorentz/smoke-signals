@@ -1,4 +1,4 @@
-import json, urllib2, re, random, string, time, hmac, hashlib, base64, urlparse
+import json, urllib2, re, random, string, time, hmac, hashlib, base64, urlparse, os
 from smokesignals.models.user import User
 
 def new_status_post(user, text):
@@ -55,8 +55,6 @@ def create_ss_app_post(entity):
     info = discover(entity)
 
     new_post_url = info['post']['content']['servers'][0]['urls']['new_post']
-    # TODO the url of the app needs to be set in a config file
-    # and used in the redirect_uri
     new_post = {
         "type": "https://tent.io/types/app/v0#",
         "content": {
@@ -74,7 +72,7 @@ def create_ss_app_post(entity):
                 ]
             },
             "scopes": ["permissions"],
-            "redirect_uri": "http://localhost:5000/finish_auth"
+            "redirect_uri": "%s/finish_auth" % (os.environ['SMOKESIGNALS_URL'])
         },
         "permissions": {
             "public": False
