@@ -8,6 +8,6 @@ while True:
     try:
         process_feeds.rss2tent()
     except:
-        type, message, trace = sys.exc_info()[0]
+        type, message, trace = sys.exc_info()
         print("%s" % (message))
     time.sleep(seconds_to_sleep)
