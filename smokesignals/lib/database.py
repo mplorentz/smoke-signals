@@ -1,7 +1,18 @@
-import psycopg2
+import psycopg2, os, urlparse
 class Database:
     def __init__(self):
-        self.conn = psycopg2.connect('dbname=smokesignals')
+
+        urlparse.uses_netloc.append("postgres")
+        url = urlparse.urlparse(os.environ["DATABASE_URL"])
+
+        conn = psycopg2.connect(
+            database=url.path[1:],
+            user=url.username,
+            password=url.password,
+            host=url.hostname,
+            port=url.port
+        )
+
         self.cursor = self.conn.cursor()
 
     def query_db(self, query, args=(), one=False):
