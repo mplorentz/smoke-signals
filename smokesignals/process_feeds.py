@@ -47,8 +47,8 @@ def rss2tent():
                     print(err.message)
                 
                 recent.appendleft(hashable_entry)
-             else:
-                 print("Item %s has already been seen" % entry['link'])
+            else:
+                print("Item %s has already been seen" % entry['link'])
 
         feed.recent_items_cache = recent
         feed.save()
