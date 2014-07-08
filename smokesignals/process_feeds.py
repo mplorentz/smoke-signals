@@ -10,7 +10,6 @@ def rss2tent():
     
     # fetch all feeds
     feeds = Feed.where("'1'")
-    print("Got %d feeds" % (len(feeds)))
     
     for feed in feeds:
         # fetch the user and feed
@@ -48,6 +47,8 @@ def rss2tent():
                     print(err.message)
                 
                 recent.appendleft(hashable_entry)
+             else:
+                 print("Item %s has already been seen" % entry['link'])
 
         feed.recent_items_cache = recent
         feed.save()
