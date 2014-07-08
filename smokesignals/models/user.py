@@ -1,4 +1,4 @@
-from lib.database import Database
+from smokesignals.lib.database import Database
 
 class User:
     def __init__(self):

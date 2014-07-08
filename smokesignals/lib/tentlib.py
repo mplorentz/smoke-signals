@@ -1,5 +1,5 @@
-import json, urllib2, re, random, string, time, hmac, hashlib, base64, urlparse
-from models.user import User
+import json, urllib2, re, random, string, time, hmac, hashlib, base64, urlparse, os
+from smokesignals.models.user import User
 
 def new_status_post(user, text):
     datastr = json.dumps(data)
@@ -74,7 +74,7 @@ def create_ss_app_post(entity):
                 ]
             },
             "scopes": ["permissions"],
-            "redirect_uri": "http://localhost:5000/finish_auth"
+            "redirect_uri": "%s/finish_auth" % (os.environ.get("SMOKESIGNALS_URL", "http://localhost:5000"))
         },
         "permissions": {
             "public": False

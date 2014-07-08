@@ -1,4 +1,4 @@
-from lib.database import Database
+from smokesignals.lib.database import Database
 from collections import deque
 import pickle, sqlite3
 
