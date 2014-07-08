@@ -10,6 +10,7 @@ def rss2tent():
     
     # fetch all feeds
     feeds = Feed.where("'1'")
+    print("Got %d feeds" % (len(feeds)))
     
     for feed in feeds:
         # fetch the user and feed
