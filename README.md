@@ -1,5 +1,7 @@
 Smoke-signals is a Tent<->RSS bridge designed to pull RSS feeds into the Tent ecosystem and publish Tent content in the RSS format.
 
+There is a hosted instance [here](http://smokesignalsrss.herokuapp.com)
+
 Find out more about [Tent](http://tent.io)
 
 ## Installation
