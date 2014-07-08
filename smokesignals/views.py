@@ -8,20 +8,6 @@ import smokesignals.lib.tentlib as tentlib
 
 Flask.secret_key = os.environ['FLASK_SECRET']
 
-app = Flask(__name__)
-app.debug = False
-
-@app.before_request
-def before_request():
-    g.db = Database()
-
-@app.teardown_request
-def teardown_request(exception):
-    if hasattr(g, 'db'):
-        del(g.db)
-
-# define all the routes here
-
 @app.route('/')
 def main():
     """ Main landing page. """
@@ -146,8 +132,3 @@ def finish_unregister():
         feed.delete()
 
     return "Successfully deleted %s" % (user.entity)
-
-
-if __name__ == '__main__':
-    app.run()
-

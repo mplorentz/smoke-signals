@@ -15,4 +15,4 @@ Make your database:
 
 And get 'er started:
 
-    python smokesignals/app.py
+    python webserver.py & python smokesignalsd.py

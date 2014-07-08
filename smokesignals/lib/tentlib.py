@@ -72,7 +72,7 @@ def create_ss_app_post(entity):
                 ]
             },
             "scopes": ["permissions"],
-            "redirect_uri": "%s/finish_auth" % (os.environ['SMOKESIGNALS_URL'])
+            "redirect_uri": "%s/finish_auth" % (os.environ.get("SMOKESIGNALS_URL", "http://localhost:5000"))
         },
         "permissions": {
             "public": False
