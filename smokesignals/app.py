@@ -8,150 +8,146 @@ import lib.tentlib as tentlib
 
 Flask.secret_key = "ITSASECRETDONTTELLANYONE"
 
-def create_app():
-    app = Flask(__name__)
-    app.debug = True
+app = Flask(__name__)
+app.debug = False
+
+@app.before_request
+def before_request():
+    g.db = Database()
+
+@app.teardown_request
+def teardown_request(exception):
+    if hasattr(g, 'db'):
+        del(g.db)
+
+# define all the routes here
+
+@app.route('/')
+def main():
+    """ Main landing page. """
+    return "smoke signals connect tent and rss!"
+
+@app.route('/feed')
+def feed():
+    """ View a feed, so we know parsing is working. """
+    url = request.args.get('url', '')
+    if not url:
+        return "no url"
+
+    data = feedparser.parse(url)
+    return str(data)
+
+@app.route('/register', methods=['GET'])
+def get_register():
+    """ Register a new user. """
+    return render_template("register.html")
+
+@app.route('/register', methods=['POST'])
+def start_register():
+    """ Go through the Tent auth process. """
+    entity = request.form['entity'][0:1024].strip()
+    feed_url = request.form['feed_url'][0:1024].strip()
+    session['entity'] = entity
+
+    # Discover entity
+    try: session['info'] = tentlib.discover(entity)
+    except: return "An error occured while connecting to your entity (discovery failure)."
+
+    # Check that entity is unique
+    if User.where("entity=%s", (entity,)): 
+        return "Error: This entity is already registered."
+
+    # Validate Feed
+    try: 
+        rss = feedparser.parse(feed_url)
+    except: 
+        return "Error: Smoke Signals could not parse the RSS feed."
+
+    # Create App Post
+    (app_id, app_hawk_key, app_hawk_id) = tentlib.create_ss_app_post(entity)
+
+    # Save our new user and rss feed
+    user = User().create(entity, app_id, app_hawk_key, app_hawk_id)
+    feed = Feed().create(feed_url, user.id)
+
+    # Add all items in the feed to recent_items_cache, so they don't all get
+    # posted the first time the feed is processed.
+    initial_items = deque([], Feed.recent_items_cache_size)
+    for entry in rss['entries']:
+        initial_items.appendleft(Feed.hashable_entry(entry))
+    feed.recent_items_cache = initial_items
+    feed.save()
+
+    # Start OAuth
+    return start_oauth("/finish_registration")
+
+@app.route('/finish_registration')
+def finish_registration():
+    return "Success! Smoke Signals will now post new RSS items to your Tent server."
     
-    @app.before_request
-    def before_request():
-        g.db = Database()
+def start_oauth(redirect_uri):
+    session['oauth_redirect'] = redirect_uri
+    if 'entity' not in session:
+        return "error: entity not set"
+    if 'info' not in session:
+        session['info'] = tentlib.discover(session['entity'])
 
-    @app.teardown_request
-    def teardown_request(exception):
-        if hasattr(g, 'db'):
-            del(g.db)
+    user = User.where("entity=%s", args=(session['entity'],), one=True)
 
-    # define all the routes here
+    oauth_url = session['info']['post']['content']['servers'][0]['urls']['oauth_auth']
+    state = tentlib.randomword(10)
+    session['state'] = state
 
-    @app.route('/')
-    def main():
-        """ Main landing page. """
-        return "smoke signals connect tent and rss!"
+    return redirect("%s?client_id=%s&state=%s" % (oauth_url, user.app_id, state))
 
-    @app.route('/feed')
-    def feed():
-        """ View a feed, so we know parsing is working. """
-        url = request.args.get('url', '')
-        if not url:
-            return "no url"
+@app.route('/finish_auth')
+def finish_auth():
+    code = request.args.get('code')
+    state = request.args.get('state')
 
-        data = feedparser.parse(url)
-        return str(data)
+    # verify the state
+    if state != session['state']:
+        return "Error: Authorization failed. Please try again.\nStates did not match up."
 
-    @app.route('/register', methods=['GET'])
-    def get_register():
-        """ Register a new user. """
-        return render_template("register.html")
+    user = User.where("entity=%s", (session['entity'],), one=True)
 
-    @app.route('/register', methods=['POST'])
-    def start_register():
-        """ Go through the Tent auth process. """
-        entity = request.form['entity'][0:1024].strip()
-        feed_url = request.form['feed_url'][0:1024].strip()
-        session['entity'] = entity
+    token_url = session['info']['post']['content']['servers'][0]['urls']['oauth_token']
+    payload = {"code": code, "token_type": "https://tent.io/oauth/hawk-token"}
+    req = tentlib.form_oauth_request(token_url, payload, user.app_id, user.app_hawk_key, user.app_hawk_id)
+    print(req.headers)
 
-        # Discover entity
-        try: session['info'] = tentlib.discover(entity)
-        except: return "An error occured while connecting to your entity (discovery failure)."
+    try:
+        res = json.load(urllib2.urlopen(req))
+    except urllib2.HTTPError, err:
+        print(err.read())
+        return "Error: Authorization failed. Please try again."
 
-        # Check that entity is unique
-        if User.where("entity=%s", (entity,)): 
-            return "Error: This entity is already registered."
+    user.hawk_key = res['hawk_key']
+    user.hawk_id = res['access_token']
+    user.save()
 
-        # Validate Feed
-        try: 
-            rss = feedparser.parse(feed_url)
-        except: 
-            return "Error: Smoke Signals could not parse the RSS feed."
+    return redirect(session['oauth_redirect'])
 
-        # Create App Post
-        (app_id, app_hawk_key, app_hawk_id) = tentlib.create_ss_app_post(entity)
+@app.route('/unregister', methods=['GET'])
+def get_unregister():
+    return render_template("unregister.html")
 
-        # Save our new user and rss feed
-        user = User().create(entity, app_id, app_hawk_key, app_hawk_id)
-        feed = Feed().create(feed_url, user.id)
+@app.route('/unregister', methods=['POST'])
+def start_unregister():
+    session['entity'] = request.form['entity'][0:1024].strip()
+    return start_oauth("/finish_unregister")
 
-        # Add all items in the feed to recent_items_cache, so they don't all get
-        # posted the first time the feed is processed.
-        initial_items = deque([], Feed.recent_items_cache_size)
-        for entry in rss['entries']:
-            initial_items.appendleft(Feed.hashable_entry(entry))
-        feed.recent_items_cache = initial_items
-        feed.save()
+@app.route('/finish_unregister')
+def finish_unregister():
+    user = User.where("entity=%s", (session['entity'],), one=True)
+    user.delete()
+    feeds = Feed.where("user_id=%s", (user.id,))
+    for feed in feeds:
+        feed.delete()
 
-        # Start OAuth
-        return start_oauth("/finish_registration")
+    return "Successfully deleted %s" % (user.entity)
 
-    @app.route('/finish_registration')
-    def finish_registration():
-        return "Success! Smoke Signals will now post new RSS items to your Tent server."
-        
-    def start_oauth(redirect_uri):
-        session['oauth_redirect'] = redirect_uri
-        if 'entity' not in session:
-            return "error: entity not set"
-        if 'info' not in session:
-            session['info'] = tentlib.discover(session['entity'])
-
-        user = User.where("entity=%s", args=(session['entity'],), one=True)
-
-        oauth_url = session['info']['post']['content']['servers'][0]['urls']['oauth_auth']
-        state = tentlib.randomword(10)
-        session['state'] = state
-
-        return redirect("%s?client_id=%s&state=%s" % (oauth_url, user.app_id, state))
-
-    @app.route('/finish_auth')
-    def finish_auth():
-        code = request.args.get('code')
-        state = request.args.get('state')
-
-        # verify the state
-        if state != session['state']:
-            return "Error: Authorization failed. Please try again.\nStates did not match up."
-
-        user = User.where("entity=%s", (session['entity'],), one=True)
-
-        token_url = session['info']['post']['content']['servers'][0]['urls']['oauth_token']
-        payload = {"code": code, "token_type": "https://tent.io/oauth/hawk-token"}
-        req = tentlib.form_oauth_request(token_url, payload, user.app_id, user.app_hawk_key, user.app_hawk_id)
-        print(req.headers)
-
-        try:
-            res = json.load(urllib2.urlopen(req))
-        except urllib2.HTTPError, err:
-            print(err.read())
-            return "Error: Authorization failed. Please try again."
-
-        user.hawk_key = res['hawk_key']
-        user.hawk_id = res['access_token']
-        user.save()
-
-        return redirect(session['oauth_redirect'])
-
-    @app.route('/unregister', methods=['GET'])
-    def get_unregister():
-        return render_template("unregister.html")
-
-    @app.route('/unregister', methods=['POST'])
-    def start_unregister():
-        session['entity'] = request.form['entity'][0:1024].strip()
-        return start_oauth("/finish_unregister")
-
-    @app.route('/finish_unregister')
-    def finish_unregister():
-        user = User.where("entity=%s", (session['entity'],), one=True)
-        user.delete()
-        feeds = Feed.where("user_id=%s", (user.id,))
-        for feed in feeds:
-            feed.delete()
-
-        return "Successfully deleted %s" % (user.entity)
-
-    return app
-    
 
 if __name__ == '__main__':
-    app = create_app()
     app.run()
 

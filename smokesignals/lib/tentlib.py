@@ -1,5 +1,5 @@
 import json, urllib2, re, random, string, time, hmac, hashlib, base64, urlparse
-from models.user import User
+from smokesignals.models.user import User
 
 def new_status_post(user, text):
     datastr = json.dumps(data)

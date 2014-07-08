@@ -1,4 +1,4 @@
-from lib.database import Database
+from smokesignals.lib.database import Database
 
 class FeedItem:
     def __init__(self):
