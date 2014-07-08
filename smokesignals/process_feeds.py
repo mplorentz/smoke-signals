@@ -13,7 +13,7 @@ def rss2tent():
     
     for feed in feeds:
         # fetch the user and feed
-        user = User.where("id=?", (feed.id,), one=True)
+        user = User.where("id=?", (feed.user_id,), one=True)
         try:
             rss = feedparser.parse(feed.url)
         except:
