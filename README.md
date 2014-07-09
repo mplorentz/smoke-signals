@@ -18,3 +18,7 @@ Make your database:
 And get 'er started:
 
     python webserver.py & python smokesignalsd.py
+
+## Deployment
+
+If you want to deploy Smoke Signals yourself you may want to check out the Heroku branch. The heroku branch uses the gunicorn web server and a postgresql database. 
