@@ -21,4 +21,4 @@ And get 'er started:
 
 ## Deployment
 
-If you want to deploy Smoke Signals yourself you may want to check out the Heroku branch. The heroku branch uses the gunicorn web server and a postgresql database. 
+If you want to deploy Smoke Signals yourself you may want to check out the Heroku branch. You can find detailed instructions on the [wiki](https://github.com/mplorentz/smoke-signals/wiki/Heroku).
