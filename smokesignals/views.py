@@ -3,6 +3,7 @@ from collections import deque
 from flask import Flask, request, g, render_template, redirect, session
 from smokesignals import app
 from smokesignals.models.user import User
+from smokesignals.models.prefs import Prefs
 from smokesignals.lib.database import Database
 import smokesignals.lib.tentlib as tentlib
 
@@ -30,15 +31,9 @@ def get_preferences():
 
 @app.route('/preferences', methods=['POST'])
 def post_preferences():
-    user = User.where("entity=?", (session['entity'],), one=True) 
-    newprefs, msg = parse_prefs_form(request.form)
+    prefs, msg = Prefs.expand(session['entity'], request.form)
     if msg: return msg
-    oldprefs = user.get_preferences()
-    newprefs['version'] = oldprefs.get("version", "")
-    newprefs['recent_items_cache'] = oldprefs['recent_items_cache']
-    user.preferences = newprefs
-    user.save_preferences()
-
+    prefs.save()
     return "Success!"
 
 @app.route('/register', methods=['GET'])
@@ -67,7 +62,7 @@ def start_register():
     user = User().create(entity, app_id, app_hawk_key, app_hawk_id)
 
     # Start OAuth
-    session['oauth_redirect'] = "/preferences"
+    return start_oauth('/preferences')
 
 @app.route('/sign_in', methods=['GET'])
 def start_sign_in():
@@ -78,7 +73,6 @@ def finish_sign_in():
     session['entity'] = request.form['entity'][0:1024].strip()
     if not User.where("entity=?", (session['entity'],)):
         return redirect('/register')
-    session['oauth_redirect'] = "/preferences"
     return start_oauth('/preferences')
     
 def start_oauth(redirect_uri):
@@ -139,30 +133,3 @@ def finish_unregister():
     user.delete()
 
     return "Successfully deleted %s" % (user.entity)
-
-def parse_prefs_form(form):
-    """Takes a form object from a POST to /preferences and returns a proper preferences object as a dict.
-       Returns a dict of preferences and an error message or None."""
-    if form['source_protocol'] not in ["tent", "rss"]:
-        return {}, "Invalid source protocol %s." % (form['source_protocol'])
-    if form['post_type'] not in ["status", "essay"]:
-        return {}, "Invalid post type." % (form['post_type'])
-    try: 
-        rss = feedparser.parse("rss_url")
-    except: 
-        return "Error: Smoke Signals could not parse the RSS feed."
-
-    # Add all items in the feed to recent_items_cache, so they don't all get
-    # posted the first time the feed is processed.
-    #initial_items = deque([], Feed.recent_items_cache_size)
-    #for entry in rss['entries']:
-    #    initial_items.appendleft(Feed.hashable_entry(entry))
-    #feed.recent_items_cache = initial_items
-    #feed.save()
-
-    return  {
-        "source_protocol": form["source_protocol"],
-        "post_type": form["post_type"],
-        "rss_url": form["rss_url"],
-    }, None
-            
