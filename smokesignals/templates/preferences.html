@@ -1,0 +1,12 @@
+<html><body>
+    <h1>Preferences</h1>
+    <form action="/preferences" method="POST">
+        Post Type <br />
+        <input name="post_type" type="radio" value="status"/>Status<br />
+        <input name="post_type" type="radio" value="essay"/>Essay<br />
+        RSS URL
+        <input name="rss_url" type="text"/>
+        <input name="source_protocol" type="text" value="rss" hidden="true"/>
+        <input type="submit"/>
+    </form>
+</body></html>

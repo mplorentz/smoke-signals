@@ -1,5 +1,4 @@
 import json, urllib2, re, random, string, time, hmac, hashlib, base64, urlparse, os
-from smokesignals.models.user import User
 
 def new_status_post(user, text):
     datastr = json.dumps(data)
@@ -15,19 +14,22 @@ def new_status_post(user, text):
     return urllib2.urlopen(req)
     
 
-def form_request(url, body, client_id, hawk_key, hawk_id):
+def form_request(url, body, client_id, hawk_key, hawk_id, http_verb="", post_type="https://tent.io/types/status/v0#"):
     urlparts = urlparse.urlparse(url)
     host = urlparts.netloc
     uri = urlparts.path
     port = 0
+    if not http_verb:
+        http_verb = "POST" if body else "GET"
+
     if (urlparts.scheme == "https"):
         port = 443
     elif (urlparts.scheme == "http"):
         port = 80
     now   = str(int(time.time()))
     nonce = randomword(10)
-    mac_data = "hawk.1.header\n%s\n%s\nPOST\n%s\n%s\n%s\n\n\n%s\n\n" % (
-            now, nonce, uri, host, port, client_id
+    mac_data = "hawk.1.header\n%s\n%s\n%s\n%s\n%s\n%s\n\n\n%s\n\n" % (
+            now, nonce, http_verb, uri, host, port, client_id
     )
 
     mac = base64.b64encode(hmac.new(hawk_key.encode('utf-8'), mac_data, hashlib.sha256).digest())
@@ -36,11 +38,13 @@ def form_request(url, body, client_id, hawk_key, hawk_id):
         url, 
         data=json.dumps(body),
         headers={
-            'Content-Type': 'application/vnd.tent.post.v0+json; type="https://tent.io/types/status/v0#"',
+            'Content-Type': 'application/vnd.tent.post.v0+json; type="%s"' % (post_type),
             'Authorization': 'Hawk id="%s", mac="%s", ts="%s", nonce="%s", app="%s"' %
                 (hawk_id, mac, now, nonce, client_id)
         }
     )
+
+    req.get_method = lambda : http_verb
 
     return req
 
@@ -66,11 +70,11 @@ def create_ss_app_post(entity):
                 "read": [
                     "https://tent.io/types/app/v0",
                     "https://tent.io/types/status/v0",
-                    "http://mattlorentz.com/tent/types/rssfeed/v0",
+                    "http://mattlorentz.com/tent/types/smoke-signals-prefs/v0",
                 ],
                 "write": [
                     "https://tent.io/types/status/v0",
-                    "http://mattlorentz.com/tent/types/rssfeed/v0",
+                    "http://mattlorentz.com/tent/types/smoke-signals-prefs/v0",
                 ]
             },
             "scopes": ["permissions"],
