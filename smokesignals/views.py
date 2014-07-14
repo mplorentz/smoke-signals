@@ -74,6 +74,11 @@ def finish_sign_in():
     if not User.where("entity=?", (session['entity'],)):
         return redirect('/register')
     return start_oauth('/preferences')
+
+@app.route('/sign_out')
+def sign_out():
+    session.clear()
+    return "You have been successfully logged out."
     
 def start_oauth(redirect_uri):
     session['oauth_redirect'] = redirect_uri
