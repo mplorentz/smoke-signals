@@ -1,13 +1,14 @@
 {% extends "layout.html" %}
 {% block body %}
-<h2 class="content-subhead">Sign In</h2>
+<h2 class="content-subhead">Sign In/Register</h2>
 <form class="pure-form pure-form-stacked" action="/sign_in" method="POST">
     <fieldset>
+        <legend>To sign up or sign in, fill in your Tent entity below.</legend>
         <div class="pure-control-group">
             <input name="entity" type="text" placeholder="Entity"/>
         <div/>
         <div class="pure-controls">
-            <button type="submit" class="pure-button pure-button-primary">Sign In</button>
+            <button type="submit" class="pure-button pure-button-primary">Submit</button>
         </div>
     </fieldset>
 </form>

@@ -1,5 +1,6 @@
 import json, urllib2, re, random, string, time, hmac, hashlib, base64, urlparse, feedparser
 from collections import deque
+from functools import wraps
 from flask import Flask, request, g, render_template, redirect, session, flash
 from smokesignals import app
 from smokesignals.models.user import User
@@ -9,12 +10,19 @@ import smokesignals.lib.tentlib as tentlib
 
 Flask.secret_key = "ITSASECRETDONTTELLANYONE"
 
+def auth(f):
+    @wraps(f)
+    def decorator(*args, **kwargs):
+        if 'authenticated' not in session:
+            flash("You need to log in first.", "error")
+            return redirect("sign_in")
+        else: 
+            return f(*args, **kwargs)
+    return decorator
+
 @app.route('/')
 def home():
     """ Main landing page. """
-    flash('Welcome to Smoke Signals!')
-    flash('An error occured.', 'error')
-    flash('This flash message is really really really long and should probably end up spanning multiple lines.')
     return render_template("home.html")
 
 @app.route('/feed')
@@ -27,70 +35,59 @@ def feed():
     data = feedparser.parse(url)
     return str(data)
 
+@app.route('/sign_in', methods=['GET'])
+def start_sign_in():
+    return render_template("sign_in.html")
+
+@app.route('/sign_in', methods=['POST'])
+def finish_sign_in():
+    entity = request.form['entity'][0:1024].strip()
+    if not User.where("entity=?", (entity,)):
+        try: 
+            session['info'] = tentlib.discover(entity)
+        except: 
+            flash("An error occured while connecting to your entity (discovery failure).", 'error')
+            return render_template('sign_in.html')
+        (app_id, app_hawk_key, app_hawk_id) = tentlib.create_ss_app_post(entity)
+        user = User().create(entity, app_id, app_hawk_key, app_hawk_id)
+        flash('You have registered successfully')
+
+    session['entity'] = entity
+    return start_oauth('/preferences')
+
 @app.route('/preferences', methods=['GET'])
+@auth
 def get_preferences():
     user = User.where("entity=?", (session['entity'],), one=True) 
     return render_template("preferences.html", prefs=user.get_preferences())
 
 @app.route('/preferences', methods=['POST'])
+@auth
 def post_preferences():
     prefs, msg = Prefs.expand(session['entity'], request.form)
-    if msg: return msg
+    if msg: 
+        flash(msg, 'error')
+        return render_template('preferences.html')
     prefs.save()
-    return "Success!"
-
-@app.route('/register', methods=['GET'])
-def get_register():
-    """ Register a new user. """
-    return render_template("register.html")
-
-@app.route('/register', methods=['POST'])
-def start_register():
-    """ Go through the Tent auth process. """
-    entity = request.form['entity'][0:1024].strip()
-    session['entity'] = entity
-
-    # Discover entity
-    try: session['info'] = tentlib.discover(entity)
-    except: return "An error occured while connecting to your entity (discovery failure)."
-
-    # Check that entity is unique
-    if User.where("entity=?", (entity,)):
-        return "Error: This entity is already registered."
-
-    # Create App Post
-    (app_id, app_hawk_key, app_hawk_id) = tentlib.create_ss_app_post(entity)
-
-    # Save our new user
-    user = User().create(entity, app_id, app_hawk_key, app_hawk_id)
-
-    # Start OAuth
-    return start_oauth('/preferences')
-
-@app.route('/sign_in', methods=['GET'])
-def start_sign_in():
-    return render_template("signin.html")
-
-@app.route('/sign_in', methods=['POST'])
-def finish_sign_in():
-    session['entity'] = request.form['entity'][0:1024].strip()
-    if not User.where("entity=?", (session['entity'],)):
-        return redirect('/register')
-    return start_oauth('/preferences')
+    flash("Saved!")
+    return render_template('preferences.html')
 
 @app.route('/sign_out')
+@auth
 def sign_out():
     session.clear()
-    return "You have been successfully logged out."
+    flash('You have been successfully logged out.')
+    return redirect('/')
     
 def start_oauth(redirect_uri):
     session['oauth_redirect'] = redirect_uri
     if 'entity' not in session:
-        return "error: entity not set"
+        flash("Internal Error: Entity not set", 'error')
+        return redirect("/sign_in")
     if 'info' not in session:
         session['info'] = tentlib.discover(session['entity'])
 
-    user = User.where("entity=?", args=(session['entity'],), one=True)
+    user = User.where("entity=?", (session['entity'],), one=True)
 
     oauth_url = session['info']['post']['content']['servers'][0]['urls']['oauth_auth']
     state = tentlib.randomword(10)
@@ -105,7 +102,8 @@ def finish_auth():
 
     # verify the state
     if state != session['state']:
-        return "Error: Authorization failed. Please try again.\nStates did not match up."
+        flash("Error: Authorization failed. Please try again.\nStates did not match up.", "error")
+        return redirect("/sign_in")
 
     user = User.where("entity=?", (session['entity'],), one=True)
 
@@ -118,26 +116,26 @@ def finish_auth():
         res = json.load(urllib2.urlopen(req))
     except urllib2.HTTPError, err:
         print(err.read())
-        return "Error: Authorization failed. Please try again."
+        flash("Error: Authorization failed. Please try again.", "error")
+        return redirect("/sign_in")
 
     user.hawk_key = res['hawk_key']
     user.hawk_id = res['access_token']
     user.save()
+    session['authenticated'] = True
 
     return redirect(session['oauth_redirect'])
 
 @app.route('/unregister', methods=['GET'])
-def get_unregister():
+@auth
+def start_unregister():
     return render_template("unregister.html")
 
 @app.route('/unregister', methods=['POST'])
-def start_unregister():
-    session['entity'] = request.form['entity'][0:1024].strip()
-    return start_oauth("/finish_unregister")
-
-@app.route('/finish_unregister')
+@auth
 def finish_unregister():
     user = User.where("entity=?", (session['entity'],), one=True)
     user.delete()
-
-    return "Successfully deleted %s" % (user.entity)
+    session.clear()
+    flash("Successfully deleted %s" % (user.entity))
+    return redirect("/")
