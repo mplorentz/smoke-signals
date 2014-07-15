@@ -1,8 +1,16 @@
-<body>
-    <h1>Registration</h1>
-    <p>Sign up with your Tent entity and then we'll set up your preferences.</p>
-    <form action="/register" method="POST">
-        Entity <input name="entity" type="text"/>
-        <input type="submit"/>
-    </form>
-</body>
+{% extends "layout.html" %}
+{% block body %}
+<h2 class="content-subhead">Registration</h2>
+<form class="pure-form pure-form-stacked" action="/register" method="POST">
+    <fieldset>
+        <legend>Sign up with your Tent entity and then we'll set up your preferences.</legend>
+        <div class="pure-control-group">
+            <input name="entity" type="text" placeholder="Entity"/>
+        <div/>
+
+        <div class="pure-controls">
+            <button type="submit" class="pure-button pure-button-primary">Register</button>
+        </div>
+    </fieldset>
+</form>
+{% endblock %}

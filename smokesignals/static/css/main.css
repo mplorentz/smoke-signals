@@ -1,0 +1,25 @@
+.flashes li {
+    list-style:none;
+    text-align:center;
+    padding: 0px 0px 0px 0px;
+    margin-bottom: 12px;
+    border-bottom-left-radius:6px;
+    border-bottom-right-radius:6px;
+    border-top-left-radius:6px;
+    border-top-right-radius:6px;
+    width:60%;
+    margin-left:auto;
+    margin-right:auto;
+}
+
+.message {
+    color: #468847;
+    background-color: #dff0d8;
+    border: 1px solid #d6e9c6;
+}
+
+.error {
+    color: #b94a48;
+    background-color: #f2dede;
+    border: 1px solid #eed3d7;
+}

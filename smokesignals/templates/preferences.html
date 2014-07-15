@@ -1,12 +1,30 @@
-<html><body>
-    <h1>Preferences</h1>
-    <form action="/preferences" method="POST">
-        Post Type <br />
-        <input name="post_type" type="radio" value="status"/>Status<br />
-        <input name="post_type" type="radio" value="essay"/>Essay<br />
-        RSS URL
-        <input name="rss_url" type="text"/>
+{% extends "layout.html" %}
+{% block body %}
+<h2 class="content-subhead">Preferences</h2>
+<form class="pure-form pure-form-stacked" action="/preferences" method="POST">
+    <fieldset>
+        <div class="pure-control-group">
+            <input name="rss_url" type="text" placeholder="RSS Url"/>
+        <div/>
+        <br />
+        <div class="pure-control-group">
+            <label for="post_type">Post Type</label>
+            <label for="status" class="pure-radio">
+                <input name="post_type" type="radio" value="status"/>
+                Status
+            </label>
+            <label for="essay" class="pure-radio">
+                <input name="post_type" type="radio" value="essay"/>
+                Essay
+            </label>
+        </div>
+        <br />
+
         <input name="source_protocol" type="text" value="rss" hidden="true"/>
-        <input type="submit"/>
-    </form>
-</body></html>
+
+        <div class="pure-controls">
+            <button type="submit" class="pure-button pure-button-primary">Save</button>
+        </div>
+    </fieldset>
+</form>
+{% endblock %}

@@ -1,6 +1,6 @@
 import json, urllib2, re, random, string, time, hmac, hashlib, base64, urlparse, feedparser
 from collections import deque
-from flask import Flask, request, g, render_template, redirect, session
+from flask import Flask, request, g, render_template, redirect, session, flash
 from smokesignals import app
 from smokesignals.models.user import User
 from smokesignals.models.prefs import Prefs
@@ -12,6 +12,9 @@ Flask.secret_key = "ITSASECRETDONTTELLANYONE"
 @app.route('/')
 def home():
     """ Main landing page. """
+    flash('Welcome to Smoke Signals!')
+    flash('An error occured.', 'error')
+    flash('This flash message is really really really long and should probably end up spanning multiple lines.')
     return render_template("home.html")
 
 @app.route('/feed')

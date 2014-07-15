@@ -1,7 +1,14 @@
-<body>
-    <h1>Sign In</h1>
-    <form action="/sign_in" method="POST">
-        Entity <input name="entity" type="text"/>
-        <input type="submit"/>
-    </form>
-</body>
+{% extends "layout.html" %}
+{% block body %}
+<h2 class="content-subhead">Sign In</h2>
+<form class="pure-form pure-form-stacked" action="/sign_in" method="POST">
+    <fieldset>
+        <div class="pure-control-group">
+            <input name="entity" type="text" placeholder="Entity"/>
+        <div/>
+        <div class="pure-controls">
+            <button type="submit" class="pure-button pure-button-primary">Sign In</button>
+        </div>
+    </fieldset>
+</form>
+{% endblock %}

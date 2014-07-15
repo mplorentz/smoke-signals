@@ -1,9 +1,13 @@
-<html><body>
-    <h1>Smoke Signals</h1>
-    <span><a href="/register">Sign up</a></span>&nbsp;| 
-    <span><a href="/unregister">Delete Account</a></span>&nbsp;|
-    <span><a href="http://github.com/mplorentz/smoke-signals">Code</a></span>&nbsp;|
-    <p>Welcome to Smoke Signals: an open-source RSS -> <a href="https://tent.io">Tent</a> bridge.</p>
-    <p><a href="/register">Sign up</a> with your Tent entity and an RSS feed. Smoke Signals will post new RSS items as status posts with links to your account.</p> 
-    <p>Smoke Signals is currently in alpha. Things might change quickly and not work properly. If you need stability you can <a href="http://github.com/mplorentz/smoke-signals">host it yourself.</a></p>
-</body></html>
+{% extends "layout.html" %}
+{% block body %}
+<h2 class="content-subhead">Welcome</h2>
+<p>
+Welcome to Smoke Signals: an open-source RSS -> <a href="https://tent.io">Tent</a> bridge.
+</p>
+<p>
+<a href="/register">Sign up</a> with your Tent entity and an RSS feed. Smoke Signals will post new RSS items as status posts with links to your account.
+</p> 
+<p>
+Smoke Signals is currently in alpha. Things might change quickly and not work properly. If you need stability you can <a href="http://github.com/mplorentz/smoke-signals">host it yourself.</a>
+</p>
+{% endblock %}
