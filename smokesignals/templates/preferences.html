@@ -1,0 +1,32 @@
+{% extends "layout.html" %}
+{% block body %}
+<h2 class="content-subhead">Preferences</h2>
+<form class="pure-form pure-form-stacked" action="/preferences" method="POST">
+    <fieldset>
+        <div class="pure-control-group">
+            <input name="rss_url" type="text" placeholder="RSS Url" value="{{prefs.rss_url if prefs.rss_url}}"/>
+        <div/>
+        <br />
+        <div class="pure-control-group">
+            <label for="post_type">Post Type</label>
+            <label for="status" class="pure-radio">
+                <input name="post_type" type="radio" value="status" 
+                    {{'checked="true"' if prefs.post_type == 'status'}} />
+                Status
+            </label>
+            <label for="essay" class="pure-radio">
+                <input name="post_type" type="radio" value="essay" 
+                    {{'checked="true"' if prefs.post_type == 'essay'}} />
+                Essay
+            </label>
+        </div>
+        <br />
+
+        <input name="source_protocol" type="text" value="rss" hidden="true"/>
+
+        <div class="pure-controls">
+            <button type="submit" class="pure-button pure-button-primary">Save</button>
+        </div>
+    </fieldset>
+</form>
+{% endblock %}

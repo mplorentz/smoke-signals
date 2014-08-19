@@ -1,15 +1,30 @@
 from smokesignals.lib.database import Database
+import smokesignals.lib.tentlib as tentlib
+import urllib2, pickle, base64, json
+from collections import deque
 
 class User:
     def __init__(self):
-        self.db              = Database()
-        self.id              = None
-        self.entity          = None 
-        self.app_id          = None 
-        self.app_hawk_key    = None 
-        self.app_hawk_id     = None 
-        self.hawk_key        = None
-        self.hawk_id         = None
+        self.db               = Database()
+        self.id               = None
+        self.entity           = None 
+        self.app_id           = None 
+        self.app_hawk_key     = None 
+        self.app_hawk_id      = None 
+        self.hawk_key         = None
+        self.hawk_id          = None
+        self.preferences_post = None
+        self.preferences      = None
+
+    def get_preferences(self):
+        from smokesignals.models.prefs import Prefs
+        self.preferences = Prefs.get_for_user(self)
+        return self.preferences
+
+    def save_preferences(self):
+        from smokesignals.models.prefs import Prefs
+        self.preferences.save()
+        self.preferences_post = self.preferences.post_id
 
     @staticmethod
     def where(conditions, args=(), one=False):
@@ -52,12 +67,13 @@ class User:
         setattr(self, "app_hawk_id", app_hawk_id)
         setattr(self, "hawk_key", None)
         setattr(self, "hawk_id", None)
+        setattr(self, "preferences_post", None)
         return self
 
     def save(self):
         self.db.insert(
-            "UPDATE users SET app_id = %s, app_hawk_key = %s, app_hawk_id = %s, hawk_key = %s, hawk_id = %s, entity = %s WHERE id = %s",
-            (self.app_id, self.app_hawk_key, self.app_hawk_id, self.hawk_key, self.hawk_id, self.entity, self.id)
+            "UPDATE users SET app_id = %s, app_hawk_key = %s, app_hawk_id = %s, hawk_key = %s, hawk_id = %s, entity = %s, preferences_post = %s WHERE id = %s",
+            (self.app_id, self.app_hawk_key, self.app_hawk_id, self.hawk_key, self.hawk_id, self.entity, self.preferences_post, self.id)
             )
 
     def delete(self):

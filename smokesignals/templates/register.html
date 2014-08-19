@@ -1,9 +1,16 @@
-<html><body>
-    <h1>Registration</h1>
-    <p>Smoke Signals will post new RSS items as status posts with links to your account. You can <a href="/unregister">unregister</a> at any time.</p>
-    <form action="/register" method="POST">
-        Entity <input name="entity" type="text"/>
-        Feed URL <input name="feed_url" type="text"/>
-        <input type="submit"/>
-    </form>
-</body></html>
+{% extends "layout.html" %}
+{% block body %}
+<h2 class="content-subhead">Registration</h2>
+<form class="pure-form pure-form-stacked" action="/register" method="POST">
+    <fieldset>
+        <legend>Sign up with your Tent entity and then we'll set up your preferences.</legend>
+        <div class="pure-control-group">
+            <input name="entity" type="text" placeholder="Entity"/>
+        <div/>
+
+        <div class="pure-controls">
+            <button type="submit" class="pure-button pure-button-primary">Register</button>
+        </div>
+    </fieldset>
+</form>
+{% endblock %}
