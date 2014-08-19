@@ -1,6 +1,7 @@
 import json, urllib2, feedparser
 from collections import deque
 from models.user import User
+from models.prefs import Prefs
 from models.feed import Feed
 from models.feed_item import FeedItem
 import lib.tentlib as tentlib
@@ -8,24 +9,23 @@ import lib.tentlib as tentlib
 def rss2tent():
     """Fetches new RSS posts and adds them to users' Tent servers"""
     
-    # fetch all feeds
-    feeds = Feed.where("1")
+    # fetch all users
+    users = User.where("1")
     
-    for feed in feeds:
-        # fetch the user and feed
-        user = User.where("id=?", (feed.user_id,), one=True)
+    for user in users:
+        # fetch the user's preferences
+        prefs = user.get_preferences()
         try:
-            rss = feedparser.parse(feed.url)
+            rss = feedparser.parse(prefs.rss_url)
         except:
-            print("Error parsing RSS feed %s" % (feed.url))
+            print("Error parsing RSS feed %s" % (prefs.rss_url))
             pass
 
-        
         # add new rss posts to the user's Tent server
-        recent = feed.recent_items_cache
+        recent = prefs.recent_items_cache
         for entry in rss['entries']:
             # Decide if this is a new post or not
-            hashable_entry = Feed.hashable_entry(entry)
+            hashable_entry = Prefs.make_hashable_entry(entry)
             if hashable_entry not in recent:    
                 print("Found new item %s" % (entry['link']))
                 info = tentlib.discover(user.entity)
@@ -48,8 +48,8 @@ def rss2tent():
                 
                 recent.appendleft(hashable_entry)
 
-        feed.recent_items_cache = recent
-        feed.save()
+        prefs.recent_items_cache = recent
+        prefs.save()
 
 def main():
     rss2tent()

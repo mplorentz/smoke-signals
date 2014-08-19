@@ -8,6 +8,7 @@ class Prefs:
         self.post_id = None
         self.version_id = None
         self.source_protocol = None
+        self.post_type = None
         self.rss_url = None
         self.recent_items_cache = None
         self.entity = entity
@@ -27,6 +28,7 @@ class Prefs:
                 cont = res['post']['content']
                 prefs.source_protocol = cont['source_protocol']
                 prefs.rss_url = cont['rss_url']
+                prefs.post_type = cont['post_type']
                 prefs.recent_items_cache = pickle.loads(base64.b64decode(cont['recent_items_cache']))
             except urllib2.HTTPError, err:
                 print(err.read())
@@ -66,6 +68,11 @@ class Prefs:
 
             req = tentlib.form_request(post_url, body, user.app_id, user.hawk_key, user.hawk_id, http_verb="PUT", post_type=post_type)
         else: 
+            # Populate the recent_items cache so we don't flood the user's feed.
+            rss = feedparser.parse(self.rss_url)
+            for entry in rss['entries']:
+                self.recent_items_cache.appendleft(Prefs.make_hashable_entry(entry))
+
             # Create new preferences post
             post_url = info['post']['content']['servers'][0]['urls']['new_post']
             body = {
@@ -84,6 +91,8 @@ class Prefs:
             res = json.load(urllib2.urlopen(req))
             self.post_id = res['post']['id']
             self.version_id = res['post']['version']['id']
+            user.preferences_post = self.post_id
+            user.save()
         except urllib2.HTTPError, err:
             print(err.read())
             print(err.message)
@@ -111,3 +120,8 @@ class Prefs:
         prefs.rss_url = d["rss_url"]
 
         return prefs, None
+
+    @staticmethod
+    def make_hashable_entry(entry):
+        """Takes an entry from a feedparser RSS feed and produces a hashable value"""
+        return (entry['link'], entry['title'], entry['published'])

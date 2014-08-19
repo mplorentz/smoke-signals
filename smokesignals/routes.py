@@ -67,10 +67,10 @@ def post_preferences():
     prefs, msg = Prefs.expand(session['entity'], request.form)
     if msg: 
         flash(msg, 'error')
-        return render_template('preferences.html')
+        return redirect('preferences')
     prefs.save()
     flash("Saved!")
-    return render_template('preferences.html')
+    return redirect('preferences')
 
 @app.route('/sign_out')
 @auth
