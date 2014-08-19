@@ -2,8 +2,6 @@ import json, urllib2, feedparser
 from collections import deque
 from models.user import User
 from models.prefs import Prefs
-from models.feed import Feed
-from models.feed_item import FeedItem
 import lib.tentlib as tentlib
 
 def rss2tent():
