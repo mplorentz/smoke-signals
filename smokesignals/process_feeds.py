@@ -15,6 +15,7 @@ def rss2tent():
     for user in users:
         # fetch the user's preferences
         prefs = user.get_preferences()
+        # fetch the rss feed
         try:
             rss = feedparser.parse(prefs.rss_url)
         except:
@@ -28,24 +29,8 @@ def rss2tent():
             hashable_entry = Prefs.make_hashable_entry(entry)
             if hashable_entry not in recent:    
                 print("Found new item %s" % (entry['link']))
-                info = tentlib.discover(user.entity)
-                new_post_url = info['post']['content']['servers'][0]['urls']['new_post']
-                data = {
-                    "type": "https://tent.io/types/status/v0#",
-                    "permissions": {
-                        "public": True,
-                    },
-                    "content": {
-                        "text": "[%s](%s)" % (entry['title'], entry['link'])
-                    },
-                }
-                req = tentlib.form_request(new_post_url, data, user.app_id, user.hawk_key, user.hawk_id)
-                try:
-                    res = json.load(urllib2.urlopen(req))
-                except urllib2.HTTPError, err:
-                    print(err.read())
-                    print(err.message)
-                
+                post_func = Prefs.func_for_post_type(prefs.post_type)
+                post_func(entry, user)
                 recent.appendleft(hashable_entry)
 
         prefs.recent_items_cache = recent

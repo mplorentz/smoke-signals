@@ -69,11 +69,11 @@ def create_ss_app_post(entity):
             "types": {
                 "read": [
                     "https://tent.io/types/app/v0",
-                    "https://tent.io/types/status/v0",
                     "http://mattlorentz.com/tent/types/smoke-signals-prefs/v0",
                 ],
                 "write": [
                     "https://tent.io/types/status/v0",
+                    "https://tent.io/types/essay/v0",
                     "http://mattlorentz.com/tent/types/smoke-signals-prefs/v0",
                 ]
             },

@@ -1,9 +1,15 @@
 import smokesignals.lib.tentlib as tentlib
 from smokesignals.models.user import User
+import smokesignals.plugins as plugins
 from collections import deque
 import json, urllib2, pickle, base64, feedparser
 
 class Prefs:
+    post_type_to_func = {
+        "status": plugins.status.post_status,
+        "essay":  plugins.essay.post_essay,
+    }
+
     def __init__(self, entity):
         self.post_id = None
         self.version_id = None
@@ -120,6 +126,19 @@ class Prefs:
         prefs.rss_url = d["rss_url"]
 
         return prefs, None
+
+    @staticmethod
+    def func_for_post_type(post_type):
+        """ Takes a valid post type and returns a function that takes an rss_entry 
+            and user and posts the rss_entry to the user's Tent server."""
+        func = Prefs.post_type_to_func.get(post_type, None)
+        if func:
+            return func
+        else:
+            print("Error: could not get post function for %s post type." % (post_type))
+            return lambda x, y : x
+
+
 
     @staticmethod
     def make_hashable_entry(entry):
