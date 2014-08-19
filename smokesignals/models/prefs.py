@@ -114,7 +114,7 @@ class Prefs:
         
         if d['source_protocol'] and d['source_protocol'] not in ["tent", "rss"]:
             return {}, "Invalid source protocol %s." % (d['source_protocol'])
-        if d['post_type'] and d['post_type'] not in ["status", "essay"]:
+        if d['post_type'] and d['post_type'] not in Prefs.post_type_to_func.keys():
             return {}, "Invalid post type %s." % (d['post_type'])
         try: 
             rss = feedparser.parse("rss_url")
